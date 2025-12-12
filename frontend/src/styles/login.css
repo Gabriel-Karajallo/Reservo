@@ -1,0 +1,52 @@
+/* Fondo general del login */
+.login-wrapper {
+  background-color: #f3f4f6;
+}
+
+/* Card centrada y elegante */
+.login-card {
+  max-width: 400px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .login-card {
+    max-width: 460px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .login-card {
+    max-width: 500px;
+  }
+}
+
+/* Botón principal (color del logo Reservo) */
+.login-btn {
+  background-color: #0f6f63; /* verde petróleo de tu logo */
+  transition: all 0.2s ease;
+}
+
+.login-btn:hover {
+  background-color: #0c5a50; /* un tono más oscuro */
+}
+
+.login-btn:disabled {
+  background-color: #0f6f63a8; /* mismo color, + transparencia */
+}
+
+/* Inputs */
+.input-box {
+  background-color: #f8f9fa;
+  border: 1px solid #dcdcdc;
+}
+
+/* Botón Google */
+.google-btn {
+  border: 1px solid #dadce0;
+  transition: all 0.2s ease;
+}
+
+.google-btn:hover {
+  background-color: #f3f3f3;
+}
