@@ -1,43 +1,72 @@
-// Importamos Firebase Auth con sus tipos
-import { 
+// ========================
+//  AUTH SERVICE (FINAL)
+// ========================
+
+// Firebase Auth
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
-
+  GoogleAuthProvider,
+  signInWithRedirect,
+  type User,
+  type UserCredential,
 } from "firebase/auth";
-import type { User } from "firebase/auth";
-import type { UserCredential } from "firebase/auth";
-// Importamos la instancia de auth desde firebaseConfig
+
 import { auth } from "./firebaseConfig";
 
-// Creamos el proveedor de Google
+// -------------------------
+//  GOOGLE PROVIDER
+// -------------------------
 const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope("email");
+googleProvider.addScope("profile");
 
-// Registro de usuario
-export const registerUser = (email: string, password: string): Promise<UserCredential> => {
+// -------------------------
+//  REGISTER (email/pass)
+// -------------------------
+export const registerUser = (
+  email: string,
+  password: string
+): Promise<UserCredential> => {
   return createUserWithEmailAndPassword(auth, email, password);
 };
 
-// Login con email y password
-export const loginUser = (email: string, password: string): Promise<UserCredential> => {
+// -------------------------
+//  LOGIN (email/pass)
+// -------------------------
+export const loginUser = (
+  email: string,
+  password: string
+): Promise<UserCredential> => {
   return signInWithEmailAndPassword(auth, email, password);
 };
 
-// Login con Google
-export const loginWithGoogle = (): Promise<UserCredential> => {
-  return signInWithPopup(auth, googleProvider);
+// -------------------------
+//  LOGIN WITH GOOGLE
+// -------------------------
+export const loginWithGoogle = async (): Promise<void> => {
+  console.log("🔵 Iniciando login con Google...");
+  try {
+    await signInWithRedirect(auth, googleProvider);
+    console.log("🔵 Redirigiendo a Google...");
+  } catch (err) {
+    console.error("❌ Error en signInWithRedirect:", err);
+    throw err;
+  }
 };
 
-// Logout
+// -------------------------
+//  LOGOUT
+// -------------------------
 export const logoutUser = (): Promise<void> => {
   return signOut(auth);
 };
 
-// Listener de cambios en el usuario
-// (para AuthContext)
+// -------------------------
+//  AUTH LISTENER
+// -------------------------
 export const onAuthStateChangedListener = (
   callback: (user: User | null) => void
 ) => {
