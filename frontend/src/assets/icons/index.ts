@@ -1,5 +1,4 @@
     // Este archivo centraliza TODOS los iconos de la app.
-// Así, si mañana cambias un icono, lo haces solo aquí.
 
 import {
   User,
@@ -19,7 +18,8 @@ import {
   Check,
   X,
   Loader2,
-  Chromium,
+  Eye,
+  EyeClosed  
 } from "lucide-react";
 
 export const Icons = {
@@ -40,5 +40,6 @@ export const Icons = {
   check: Check,
   close: X,
   spinner: Loader2,
-  google: Chromium, // icono recomendado en lugar de Chrome
+  eye: Eye,
+  eyeClosed: EyeClosed
 };
