@@ -1,3 +1,4 @@
+// region Cliente
 // Tipo para Categoría
 export interface Categoria {
   id: string;
@@ -21,4 +22,23 @@ export interface ReservaExtendida extends Reserva {
   negocioNombre?: string;
   servicioNombre?: string;
 }
+// end region
 
+
+// region Negocio
+// Tipo para Negocio
+export interface Negocio {
+  id: string;
+  nombre: string;
+  direccion: string;
+  descripcion: string;
+}
+
+export interface Servicio {
+  id: string;
+  nombre: string;
+  duracion: number;
+  precio: number;
+  negocioId: string;
+}
+// end region
