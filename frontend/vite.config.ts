@@ -22,17 +22,18 @@ export default defineConfig({
         theme_color: '#0f6f63',
         background_color: "#0f6f63",
         display: 'standalone',
-        start_url: '/cliente/home',
+        start_url: '/',
+        scope: '/',
         icons: [
     // iconos de instalación
     {
-      src: "icons/icon-192.png",
+      src: "icons/icono192.png",
       sizes: "192x192",
       type: "image/png",
       purpose: "any"
     },
     {
-      src: "icons/icon-512.png",
+      src: "icons/icono512.png",
       sizes: "512x512",
       type: "image/png",
       purpose: "any"
