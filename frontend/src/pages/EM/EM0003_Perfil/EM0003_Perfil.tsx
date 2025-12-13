@@ -1,18 +1,37 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../../../services/firebase/firebaseConfig";
+import EM0003_Horarios from "./EM0003_Horarios";
+
 import {
   collection,
   query,
   where,
   getDocs,
   addDoc,
-  updateDoc,
   deleteDoc,
   doc,
+  updateDoc,
 } from "firebase/firestore";
 
-import { Pencil, Trash2 } from "lucide-react";
-import type { Negocio, Servicio } from "../../../types/firebase";
+import { Icons } from "../../../assets/icons";
+import type {
+  Negocio,
+  Servicio,
+  HorariosSemana,
+} from "../../../types/firebase";
+
+/* =========================
+   HORARIOS POR DEFECTO
+========================== */
+const horariosPorDefecto: HorariosSemana = {
+  lunes: { activo: true, tramos: [{ inicio: "09:00", fin: "14:00" }] },
+  martes: { activo: true, tramos: [{ inicio: "09:00", fin: "14:00" }] },
+  miercoles: { activo: true, tramos: [{ inicio: "09:00", fin: "14:00" }] },
+  jueves: { activo: true, tramos: [{ inicio: "09:00", fin: "14:00" }] },
+  viernes: { activo: true, tramos: [{ inicio: "09:00", fin: "14:00" }] },
+  sabado: { activo: false, tramos: [] },
+  domingo: { activo: false, tramos: [] },
+};
 
 const EM0003_Perfil = () => {
   /* =========================
@@ -22,7 +41,6 @@ const EM0003_Perfil = () => {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [cargando, setCargando] = useState(true);
 
-  // Formulario crear
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
   const [nuevoServicio, setNuevoServicio] = useState({
     nombre: "",
@@ -30,10 +48,10 @@ const EM0003_Perfil = () => {
     precio: "",
   });
 
-  // Formulario editar
   const [servicioEditando, setServicioEditando] = useState<Servicio | null>(
     null
   );
+
   const [servicioEditado, setServicioEditado] = useState({
     nombre: "",
     duracion: "",
@@ -51,26 +69,16 @@ const EM0003_Perfil = () => {
 
     const resultado = await getDocs(consulta);
 
-    const listaServicios: Servicio[] = resultado.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as Omit<Servicio, "id">),
+    const lista: Servicio[] = resultado.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<Servicio, "id">),
     }));
 
-    setServicios(listaServicios);
+    setServicios(lista);
   };
 
-  /* Crear servicio */
-  const guardarServicio = async () => {
+  const crearServicio = async () => {
     if (!negocio) return;
-
-    if (
-      nuevoServicio.nombre.trim() === "" ||
-      nuevoServicio.duracion === "" ||
-      nuevoServicio.precio === ""
-    ) {
-      alert("Completa todos los campos");
-      return;
-    }
 
     await addDoc(collection(db, "servicios"), {
       nombre: nuevoServicio.nombre,
@@ -84,7 +92,11 @@ const EM0003_Perfil = () => {
     cargarServicios(negocio.id);
   };
 
-  /* Editar servicio */
+  const eliminarServicio = async (servicioId: string) => {
+    await deleteDoc(doc(db, "servicios", servicioId));
+    if (negocio) cargarServicios(negocio.id);
+  };
+
   const guardarEdicionServicio = async () => {
     if (!servicioEditando || !negocio) return;
 
@@ -98,10 +110,17 @@ const EM0003_Perfil = () => {
     cargarServicios(negocio.id);
   };
 
-  /* Eliminar servicio */
-  const eliminarServicio = async (servicioId: string) => {
-    await deleteDoc(doc(db, "servicios", servicioId));
-    if (negocio) cargarServicios(negocio.id);
+  /* =========================
+     FIREBASE · HORARIOS
+  ========================== */
+  const guardarHorarios = async (horarios: HorariosSemana) => {
+    if (!negocio) return;
+
+    await updateDoc(doc(db, "negocios", negocio.id), {
+      horarios,
+    });
+
+    setNegocio({ ...negocio, horarios });
   };
 
   /* =========================
@@ -110,10 +129,7 @@ const EM0003_Perfil = () => {
   useEffect(() => {
     const cargarNegocio = async () => {
       const usuario = auth.currentUser;
-      if (!usuario) {
-        setCargando(false);
-        return;
-      }
+      if (!usuario) return;
 
       const consulta = query(
         collection(db, "negocios"),
@@ -123,15 +139,15 @@ const EM0003_Perfil = () => {
       const resultado = await getDocs(consulta);
 
       if (!resultado.empty) {
-        const documento = resultado.docs[0];
+        const docu = resultado.docs[0];
 
         const negocioEncontrado: Negocio = {
-          id: documento.id,
-          ...(documento.data() as Omit<Negocio, "id">),
+          id: docu.id,
+          ...(docu.data() as Omit<Negocio, "id">),
         };
 
         setNegocio(negocioEncontrado);
-        cargarServicios(documento.id);
+        cargarServicios(docu.id);
       }
 
       setCargando(false);
@@ -141,143 +157,69 @@ const EM0003_Perfil = () => {
   }, []);
 
   /* =========================
-     RENDER · ESTADOS
+     RENDER
   ========================== */
-  if (cargando) return <p className="text-gray-600">Cargando perfil...</p>;
+  if (cargando) return <p>Cargando perfil…</p>;
+  if (!negocio) return <p>No se encontró negocio</p>;
 
-  if (!negocio)
-    return <p className="text-red-600">No se encontró un negocio asociado.</p>;
-
-  /* =========================
-     RENDER · UI
-  ========================== */
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* CABECERA */}
       <header>
         <h1 className="text-2xl font-semibold">Perfil de la empresa</h1>
-        <p className="text-gray-600">
-          Gestiona la información pública de tu negocio
-        </p>
       </header>
-
-      {/* INFORMACIÓN DEL NEGOCIO */}
-      <section className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Información del negocio</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-600">Nombre</label>
-            <input
-              type="text"
-              value={negocio.nombre}
-              disabled
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600">Dirección</label>
-            <input
-              type="text"
-              value={negocio.direccion}
-              disabled
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm text-gray-600">Descripción</label>
-            <textarea
-              value={negocio.descripcion}
-              disabled
-              rows={3}
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-            />
-          </div>
-        </div>
-      </section>
 
       {/* SERVICIOS */}
       <section className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between mb-4">
           <h2 className="text-lg font-medium">Servicios</h2>
-
           <button
             onClick={() => setMostrandoFormulario(true)}
-            className="px-4 py-2 rounded bg-[#0f6f63] text-white text-sm"
+            className="bg-[#0f6f63] text-white px-4 py-2 rounded text-sm"
           >
             Añadir servicio
           </button>
         </div>
 
-        {/* FORMULARIO NUEVO SERVICIO */}
         {mostrandoFormulario && (
-          <div className="border rounded p-4 mb-4 space-y-3 bg-gray-50">
-            <div>
-              <label className="block text-sm text-gray-600">
-                Nombre del servicio
-              </label>
-              <input
-                type="text"
-                value={nuevoServicio.nombre}
-                onChange={(e) =>
-                  setNuevoServicio({
-                    ...nuevoServicio,
-                    nombre: e.target.value,
-                  })
-                }
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600">
-                  Duración (min)
-                </label>
-                <input
-                  type="number"
-                  value={nuevoServicio.duracion}
-                  onChange={(e) =>
-                    setNuevoServicio({
-                      ...nuevoServicio,
-                      duracion: e.target.value,
-                    })
-                  }
-                  className="mt-1 w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-600">
-                  Precio (€)
-                </label>
-                <input
-                  type="number"
-                  value={nuevoServicio.precio}
-                  onChange={(e) =>
-                    setNuevoServicio({
-                      ...nuevoServicio,
-                      precio: e.target.value,
-                    })
-                  }
-                  className="mt-1 w-full border rounded px-3 py-2"
-                />
-              </div>
-            </div>
+          <div className="border p-4 rounded mb-4 space-y-3 bg-gray-50">
+            <input
+              placeholder="Nombre"
+              className="w-full border rounded px-3 py-2"
+              value={nuevoServicio.nombre}
+              onChange={(e) =>
+                setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              placeholder="Duración (min)"
+              className="w-full border rounded px-3 py-2"
+              value={nuevoServicio.duracion}
+              onChange={(e) =>
+                setNuevoServicio({ ...nuevoServicio, duracion: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              placeholder="Precio (€)"
+              className="w-full border rounded px-3 py-2"
+              value={nuevoServicio.precio}
+              onChange={(e) =>
+                setNuevoServicio({ ...nuevoServicio, precio: e.target.value })
+              }
+            />
 
             <div className="flex gap-2">
               <button
-                onClick={guardarServicio}
-                className="px-4 py-2 rounded bg-[#0f6f63] text-white text-sm"
+                onClick={crearServicio}
+                className="bg-[#0f6f63] text-white px-4 py-2 rounded text-sm"
               >
                 Guardar
               </button>
-
               <button
                 onClick={() => setMostrandoFormulario(false)}
-                className="px-4 py-2 rounded border text-sm"
+                className="border px-4 py-2 rounded text-sm"
               >
                 Cancelar
               </button>
@@ -285,112 +227,95 @@ const EM0003_Perfil = () => {
           </div>
         )}
 
-        {/* LISTADO DE SERVICIOS */}
         <ul className="space-y-3">
-          {servicios.map((servicio) => (
+          {servicios.map((s) => (
             <li
-              key={servicio.id}
-              className="border rounded p-3 bg-white shadow-sm"
+              key={s.id}
+              className="border p-3 rounded bg-white shadow-sm space-y-3"
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">{servicio.nombre}</p>
+                  <p className="font-medium">{s.nombre}</p>
                   <p className="text-sm text-gray-500">
-                    {servicio.duracion} min · {servicio.precio} €
+                    {s.duracion} min · {s.precio} €
                   </p>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      setServicioEditando(servicio);
+                      setServicioEditando(s);
                       setServicioEditado({
-                        nombre: servicio.nombre,
-                        duracion: String(servicio.duracion),
-                        precio: String(servicio.precio),
+                        nombre: s.nombre,
+                        duracion: String(s.duracion),
+                        precio: String(s.precio),
                       });
                     }}
                     className="text-[#0f6f63]"
                   >
-                    <Pencil size={18} />
+                    <Icons.edit size={18} />
                   </button>
 
                   <button
-                    onClick={() => eliminarServicio(servicio.id)}
+                    onClick={() => eliminarServicio(s.id)}
                     className="text-red-600"
                   >
-                    <Trash2 size={18} />
+                    <Icons.trash size={18} />
                   </button>
                 </div>
               </div>
 
               {/* FORMULARIO EDICIÓN */}
-              {servicioEditando?.id === servicio.id && (
-                <div className="mt-4 border rounded p-4 bg-gray-50 space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-600">
-                      Nombre del servicio
-                    </label>
+              {servicioEditando?.id === s.id && (
+                <div className="border rounded p-4 bg-gray-50 space-y-3">
+                  <input
+                    className="w-full border rounded px-3 py-2"
+                    value={servicioEditado.nombre}
+                    onChange={(e) =>
+                      setServicioEditado({
+                        ...servicioEditado,
+                        nombre: e.target.value,
+                      })
+                    }
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
                     <input
-                      type="text"
-                      value={servicioEditado.nombre}
+                      type="number"
+                      className="border rounded px-3 py-2"
+                      value={servicioEditado.duracion}
                       onChange={(e) =>
                         setServicioEditado({
                           ...servicioEditado,
-                          nombre: e.target.value,
+                          duracion: e.target.value,
                         })
                       }
-                      className="mt-1 w-full border rounded px-3 py-2"
                     />
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600">
-                        Duración (min)
-                      </label>
-                      <input
-                        type="number"
-                        value={servicioEditado.duracion}
-                        onChange={(e) =>
-                          setServicioEditado({
-                            ...servicioEditado,
-                            duracion: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full border rounded px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600">
-                        Precio (€)
-                      </label>
-                      <input
-                        type="number"
-                        value={servicioEditado.precio}
-                        onChange={(e) =>
-                          setServicioEditado({
-                            ...servicioEditado,
-                            precio: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full border rounded px-3 py-2"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      className="border rounded px-3 py-2"
+                      value={servicioEditado.precio}
+                      onChange={(e) =>
+                        setServicioEditado({
+                          ...servicioEditado,
+                          precio: e.target.value,
+                        })
+                      }
+                    />
                   </div>
 
                   <div className="flex gap-2">
                     <button
                       onClick={guardarEdicionServicio}
-                      className="px-4 py-2 rounded bg-[#0f6f63] text-white text-sm"
+                      className="bg-[#0f6f63] text-white px-4 py-2 rounded text-sm"
                     >
-                      Guardar cambios
+                      Guardar
                     </button>
 
                     <button
                       onClick={() => setServicioEditando(null)}
-                      className="px-4 py-2 rounded border text-sm"
+                      className="border px-4 py-2 rounded text-sm"
                     >
                       Cancelar
                     </button>
@@ -403,12 +328,10 @@ const EM0003_Perfil = () => {
       </section>
 
       {/* HORARIOS */}
-      <section className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-medium mb-2">Horarios</h2>
-        <p className="text-gray-500 text-sm">
-          Configura los horarios de atención de tu negocio.
-        </p>
-      </section>
+      <EM0003_Horarios
+        horariosIniciales={negocio.horarios ?? horariosPorDefecto}
+        onGuardar={guardarHorarios}
+      />
     </div>
   );
 };
