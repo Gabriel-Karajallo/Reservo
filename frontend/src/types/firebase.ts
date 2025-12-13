@@ -32,6 +32,7 @@ export interface Negocio {
   nombre: string;
   direccion: string;
   descripcion: string;
+  horarios?: HorariosSemana;
 }
 
 export interface Servicio {
@@ -42,3 +43,24 @@ export interface Servicio {
   negocioId: string;
 }
 // end region
+
+// Horarios
+export interface TramoHorario {
+  inicio: string; // "09:00"
+  fin: string;    // "14:00"
+}
+
+export interface HorarioDia {
+  activo: boolean;
+  tramos: { inicio: string; fin: string }[];
+}
+
+export interface HorariosSemana {
+  lunes: HorarioDia;
+  martes: HorarioDia;
+  miercoles: HorarioDia;
+  jueves: HorarioDia;
+  viernes: HorarioDia;
+  sabado: HorarioDia;
+  domingo: HorarioDia;
+}

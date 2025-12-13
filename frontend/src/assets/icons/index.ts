@@ -19,7 +19,9 @@ import {
   X,
   Loader2,
   Eye,
-  EyeClosed  
+  EyeClosed,
+  Edit,
+  Trash  
 } from "lucide-react";
 
 export const Icons = {
@@ -41,5 +43,7 @@ export const Icons = {
   close: X,
   spinner: Loader2,
   eye: Eye,
-  eyeClosed: EyeClosed
+  eyeClosed: EyeClosed,
+  edit: Edit,
+  trash: Trash
 };
