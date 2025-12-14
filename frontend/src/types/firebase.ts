@@ -1,4 +1,7 @@
 // region Cliente
+
+import type { Timestamp } from "firebase/firestore";
+
 // Tipo para Categoría
 export interface Categoria {
   id: string;
@@ -9,14 +12,13 @@ export interface Categoria {
 // Tipo para Reserva básica según tu Firestore
 export interface Reserva {
   id: string;
-  clienteId: string;
-  estado: "confirmada" | "cancelada" | string;
-  fecha: string; // yyyy-mm-dd
-  hora: string;  // hh:mm
-  negocioId: string;
-  servicioId: string;
+  nombreCliente: string;
+  nombreServicio: string;
+  inicio: Timestamp;
+  fin: Timestamp;
+  estado: string;
 }
-
+  
 // Tipo extendido que incluye nombres del negocio y servicio
 export interface ReservaExtendida extends Reserva {
   negocioNombre?: string;

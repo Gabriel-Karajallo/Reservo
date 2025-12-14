@@ -2,9 +2,10 @@ import { createContext } from "react";
 import type { User } from "firebase/auth";
 
 export interface UserData {
-  nombre?: string;
-  email?: string;
-  rol?: "cliente" | "empresa" | "admin";
+  nombre: string;
+  email: string;
+  rol: "cliente" | "empresa" | "admin";
+  negocioId?: string; // 👈 IMPORTANTE
 }
 
 export interface AuthContextType {
