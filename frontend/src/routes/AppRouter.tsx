@@ -15,6 +15,7 @@ import CL0001_Home from "../pages/CL/CL0001_Home/CL0001_Home";
 import CL0002_Reservas from "../pages/CL/CL0002_Reservas/CL0002_Reservas";
 import CL0003_Favoritos from "../pages/CL/CL0003_Favoritos/CL0003_Favoritos";
 import CL0004_Perfil from "../pages/CL/CL0004_Perfil/CL0004_Perfil";
+import CL0007_ReservarCita from "../pages/CL/CL0007_ReservarCita/CL0007_ReservarCita";
 
 // Empresa pages
 import EM0001_Panel from "../pages/EM/EM0001_Panel/EM0001_Panel";
@@ -23,6 +24,8 @@ import EM0003_Perfil from "../pages/EM/EM0003_Perfil/EM0003_Perfil";
 
 // Admin
 import AD0001_Panel from "../pages/AD/AD0001_Panel/AD0001_Panel";
+import CL0005_NegociosCategoria from "../pages/CL/CL0005_NegociosCategoria/CL0005_NegociosCategoria";
+import CL0006_NegocioDetalle from "../pages/CL/CL0006_NegocioDetalle/CL0006_NegocioDetalle";
 
 const AppRouter = () => {
   return (
@@ -42,6 +45,18 @@ const AppRouter = () => {
             <Route path="reservas" element={<CL0002_Reservas />} />
             <Route path="favoritos" element={<CL0003_Favoritos />} />
             <Route path="perfil" element={<CL0004_Perfil />} />
+            <Route
+              path="categoria/:categoriaId"
+              element={<CL0005_NegociosCategoria />}
+            />
+            <Route
+              path="negocio/:negocioId"
+              element={<CL0006_NegocioDetalle />}
+            />
+            <Route
+              path="reservar/:negocioId/:servicioId"
+              element={<CL0007_ReservarCita />}
+            />
           </Route>
         </Route>
 
