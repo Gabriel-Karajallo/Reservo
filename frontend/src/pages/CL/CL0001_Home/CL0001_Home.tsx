@@ -2,13 +2,24 @@ import { Search } from "lucide-react";
 import { useCategorias } from "../../../hooks/useCategorias";
 import { useReservaActiva } from "../../../hooks/useReservaActiva";
 import { useUltimaReserva } from "../../../hooks/useUltimaReserva";
-import type { Categoria } from "../../../types/firebase";
+import type { Categoria, Reserva } from "../../../types/firebase";
+import { useNavigate } from "react-router-dom";
+
+const formatearFechaHora = (reserva: Reserva) => {
+  const fecha = reserva.inicio.toDate().toLocaleDateString();
+  const hora = reserva.inicio.toDate().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${fecha} · ${hora}`;
+};
 
 const CL0001_Home = () => {
   const { categorias, loading: loadingCategorias } = useCategorias();
   const { reservaActiva, loading: loadingActiva } = useReservaActiva();
   const { ultimaReserva, loading: loadingUltima } = useUltimaReserva();
-
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-6">
       {/* Buscador */}
@@ -36,16 +47,16 @@ const CL0001_Home = () => {
             categorias.map((c: Categoria) => (
               <div
                 key={c.id}
+                onClick={() => navigate(`/cliente/categoria/${c.id}`)}
                 className="flex flex-col items-center bg-white border border-gray-200 shadow-sm px-4 py-5 rounded-xl min-w-[95px] h-[120px] justify-center transition-all duration-150 active:scale-95"
               >
-                {/* IMAGEN PERSONALIZADA */}
                 <img
                   src={`/categorias/${c.icono}`}
                   alt={c.nombre}
                   className="h-10 w-10 object-contain mb-2"
                 />
 
-                <span className="text-sm font-medium text-gray-700 mt-1 text-center">
+                <span className="text-sm font-medium text-gray-700 text-center">
                   {c.nombre}
                 </span>
               </div>
@@ -61,11 +72,9 @@ const CL0001_Home = () => {
           </h3>
 
           <div className="text-gray-700 mb-2">
-            <p className="font-medium">{reservaActiva.servicioNombre}</p>
-            <p className="text-sm">{reservaActiva.negocioNombre}</p>
-            <p className="text-sm">
-              {reservaActiva.fecha} - {reservaActiva.hora}
-            </p>
+            <p className="font-medium">{reservaActiva.nombreServicio}</p>
+            <p className="text-sm">{reservaActiva.nombreCliente}</p>
+            <p className="text-sm">{formatearFechaHora(reservaActiva)}</p>
           </div>
 
           <div className="flex justify-between mt-3">
@@ -88,11 +97,9 @@ const CL0001_Home = () => {
           </h3>
 
           <div className="text-gray-700 mb-2">
-            <p className="font-medium">{ultimaReserva.servicioNombre}</p>
-            <p className="text-sm">{ultimaReserva.negocioNombre}</p>
-            <p className="text-sm">
-              {ultimaReserva.fecha} - {ultimaReserva.hora}
-            </p>
+            <p className="font-medium">{ultimaReserva.nombreServicio}</p>
+            <p className="text-sm">{ultimaReserva.nombreCliente}</p>
+            <p className="text-sm">{formatearFechaHora(ultimaReserva)}</p>
           </div>
 
           <button className="bg-green-700 text-white px-4 py-2 rounded-lg w-full mt-3 shadow-sm active:scale-95 transition">
