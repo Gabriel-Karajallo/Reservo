@@ -12,11 +12,31 @@ export interface Categoria {
 // Tipo para Reserva básica según tu Firestore
 export interface Reserva {
   id: string;
-  nombreCliente: string;
+
+  // relaciones
+  negocioId: string;
+  servicioId: string;
+  clienteId: string;
+
+  // datos denormalizados (para no hacer 20 queries)
+  nombreNegocio: string;
   nombreServicio: string;
+  nombreCliente: string;
+
+  // tiempo
   inicio: Timestamp;
   fin: Timestamp;
-  estado: string;
+
+  // info servicio
+  duracion: number;
+  precio: number;
+
+  // estado
+  estado: "confirmada" | "cancelada" | "finalizada";
+
+  // control
+  creadaEn: Timestamp;
+  actualizadaEn: Timestamp;
 }
   
 // Tipo extendido que incluye nombres del negocio y servicio
