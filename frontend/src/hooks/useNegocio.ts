@@ -23,6 +23,7 @@ export const useNegocio = (negocioId: string) => {
         id: snapshot.id,
         ...(snapshot.data() as Omit<Negocio, "id">),
       });
+
       setLoading(false);
     });
 
