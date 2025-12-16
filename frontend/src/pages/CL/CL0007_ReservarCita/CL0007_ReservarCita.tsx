@@ -76,6 +76,15 @@ const generarHorasDisponibles = (
   return horas;
 };
 
+const haySolape = (
+  inicioA: Date,
+  finA: Date,
+  inicioB: Date,
+  finB: Date
+): boolean => {
+  return inicioA < finB && inicioB < finA;
+};
+
 /* =====================
    COMPONENTE
 ===================== */
@@ -86,7 +95,7 @@ const CL0007_ReservarCita = () => {
 
   /* =====================
      FECHA BASE
-  ====================== */
+  ===================== */
   const hoy = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -95,18 +104,18 @@ const CL0007_ReservarCita = () => {
 
   /* =====================
      ESTADOS
-  ====================== */
+  ===================== */
   const [reservaOriginal, setReservaOriginal] = useState<Reserva | null>(null);
   const [mesActual, setMesActual] = useState(
     new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   );
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(hoy);
   const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null);
-  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
+  const [reservasDia, setReservasDia] = useState<Reserva[]>([]);
 
   /* =====================
      CARGAR RESERVA ORIGINAL
-  ====================== */
+  ===================== */
   useEffect(() => {
     const cargarReserva = async () => {
       if (!reservaId) return;
@@ -125,13 +134,13 @@ const CL0007_ReservarCita = () => {
 
   /* =====================
      IDS FINALES
-  ====================== */
+  ===================== */
   const negocioFinalId = reservaOriginal?.negocioId ?? negocioId ?? "";
   const servicioFinalId = reservaOriginal?.servicioId ?? servicioId ?? "";
 
   /* =====================
      DATA
-  ====================== */
+  ===================== */
   const { negocio } = useNegocio(negocioFinalId);
   const { servicios } = useServiciosPorNegocio(negocioFinalId);
 
@@ -141,10 +150,10 @@ const CL0007_ReservarCita = () => {
   );
 
   /* =====================
-     HORAS OCUPADAS (solo hora inicio)
-  ====================== */
+     RESERVAS DEL DÍA
+  ===================== */
   useEffect(() => {
-    const cargarHorasOcupadas = async () => {
+    const cargarReservasDia = async () => {
       if (!negocioFinalId) return;
 
       const q = query(
@@ -154,26 +163,29 @@ const CL0007_ReservarCita = () => {
       );
 
       const snap = await getDocs(q);
-      const ocupadas: string[] = [];
+      const reservas: Reserva[] = [];
 
       snap.forEach((d) => {
-        const inicio = d.data().inicio.toDate();
+        const data = d.data() as Omit<Reserva, "id">;
+        const inicio = data.inicio.toDate();
 
-        // mismo día en hora local
         if (inicio.toDateString() === fechaSeleccionada.toDateString()) {
-          ocupadas.push(formatearHora(inicio));
+          reservas.push({
+            id: d.id,
+            ...data,
+          });
         }
       });
 
-      setHorasOcupadas(ocupadas);
+      setReservasDia(reservas);
     };
 
-    cargarHorasOcupadas();
+    cargarReservasDia();
   }, [fechaSeleccionada, negocioFinalId]);
 
   /* =====================
      CALENDARIO
-  ====================== */
+  ===================== */
   const diasMes = useMemo(() => {
     const dias: (Date | null)[] = [];
     const primerDia = new Date(
@@ -209,8 +221,8 @@ const CL0007_ReservarCita = () => {
   }, [fechaSeleccionada]);
 
   /* =====================
-     HORAS DISPONIBLES
-  ====================== */
+     HORAS DISPONIBLES (CON SOLAPES)
+  ===================== */
   const horasDisponibles = useMemo(() => {
     if (!negocio?.horarios || !servicioSeleccionado) return [];
 
@@ -222,12 +234,31 @@ const CL0007_ReservarCita = () => {
       servicioSeleccionado.duracion
     );
 
-    return todas.filter((h) => !horasOcupadas.includes(h));
-  }, [negocio, servicioSeleccionado, diaSemana, horasOcupadas]);
+    return todas.filter((hora) => {
+      const inicioNueva = construirFechaHora(fechaSeleccionada, hora);
+      const finNueva = new Date(inicioNueva);
+      finNueva.setMinutes(
+        finNueva.getMinutes() + servicioSeleccionado.duracion
+      );
+
+      return !reservasDia.some((r) => {
+        const inicioExistente = r.inicio.toDate();
+        const finExistente = r.fin.toDate();
+
+        return haySolape(inicioNueva, finNueva, inicioExistente, finExistente);
+      });
+    });
+  }, [
+    negocio,
+    servicioSeleccionado,
+    diaSemana,
+    fechaSeleccionada, // 👈 ESTA ES LA CLAVE
+    reservasDia,
+  ]);
 
   /* =====================
      CONFIRMAR
-  ====================== */
+  ===================== */
   const confirmarReserva = async () => {
     if (
       !negocio ||
@@ -240,16 +271,6 @@ const CL0007_ReservarCita = () => {
 
     const inicioDate = construirFechaHora(fechaSeleccionada, horaSeleccionada);
 
-    const q = query(
-      collection(db, "reservas"),
-      where("negocioId", "==", negocio.id),
-      where("estado", "==", "confirmada"),
-      where("inicio", "==", Timestamp.fromDate(inicioDate))
-    );
-
-    const snap = await getDocs(q);
-    if (!snap.empty) return;
-
     if (esCambioHora && reservaOriginal) {
       await updateDoc(doc(db, "reservas", reservaOriginal.id), {
         estado: "cancelada",
@@ -258,7 +279,6 @@ const CL0007_ReservarCita = () => {
     }
 
     const usuarioSnap = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
-
     const nombreCliente = usuarioSnap.exists()
       ? usuarioSnap.data().nombre
       : "Cliente";
@@ -291,7 +311,7 @@ const CL0007_ReservarCita = () => {
 
   /* =====================
      RENDER
-  ====================== */
+  ===================== */
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
