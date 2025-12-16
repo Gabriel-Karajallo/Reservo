@@ -4,10 +4,9 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
-  Timestamp,
   doc,
   updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "../../../services/firebase/firebaseConfig";
 import type { Reserva } from "../../../types/firebase";
@@ -32,7 +31,7 @@ const EM0002_Reservas = () => {
   const [errorSolapamiento, setErrorSolapamiento] = useState("");
 
   /* =========================
-     CARGAR RESERVAS
+     CARGAR RESERVAS REALES
   ========================== */
   useEffect(() => {
     if (loading || loadingUserData) return;
@@ -74,17 +73,18 @@ const EM0002_Reservas = () => {
   }, [loading, loadingUserData, userData, fechaSeleccionada]);
 
   /* =========================
-     ACCIONES
+     ACCIONES EMPRESA
   ========================== */
   const cancelarReserva = async () => {
     if (!reservaSeleccionada) return;
 
     await updateDoc(doc(db, "reservas", reservaSeleccionada.id), {
       estado: "cancelada",
+      actualizadaEn: Timestamp.now(),
     });
 
     cerrarModal();
-    setFechaSeleccionada(new Date(fechaSeleccionada));
+    refrescarDia();
   };
 
   const guardarNuevaHora = async () => {
@@ -101,6 +101,7 @@ const EM0002_Reservas = () => {
 
     const nuevoFin = new Date(nuevoInicio.getTime() + duracionMs);
 
+    // Anti-solapamiento
     const haySolape = reservas.some((r) => {
       if (r.id === reservaSeleccionada.id) return false;
 
@@ -118,12 +119,16 @@ const EM0002_Reservas = () => {
     await updateDoc(doc(db, "reservas", reservaSeleccionada.id), {
       inicio: Timestamp.fromDate(nuevoInicio),
       fin: Timestamp.fromDate(nuevoFin),
+      actualizadaEn: Timestamp.now(),
     });
 
     cerrarModal();
-    setFechaSeleccionada(new Date(fechaSeleccionada));
+    refrescarDia();
   };
 
+  /* =========================
+     HELPERS
+  ========================== */
   const cerrarModal = () => {
     setReservaSeleccionada(null);
     setModoModal("ver");
@@ -131,27 +136,7 @@ const EM0002_Reservas = () => {
     setErrorSolapamiento("");
   };
 
-  /* =========================
-     DEV
-  ========================== */
-  const crearReservaFake = async () => {
-    if (!userData?.negocioId) return;
-
-    const inicio = new Date(fechaSeleccionada);
-    inicio.setHours(10, 0, 0, 0);
-
-    const fin = new Date(inicio);
-    fin.setMinutes(inicio.getMinutes() + 30);
-
-    await addDoc(collection(db, "reservas"), {
-      negocioId: userData.negocioId,
-      inicio: Timestamp.fromDate(inicio),
-      fin: Timestamp.fromDate(fin),
-      nombreCliente: "Cliente prueba",
-      nombreServicio: "Servicio prueba",
-      estado: "confirmada",
-    });
-
+  const refrescarDia = () => {
     setFechaSeleccionada(new Date(fechaSeleccionada));
   };
 
@@ -163,6 +148,9 @@ const EM0002_Reservas = () => {
 
   if (loading || loadingUserData) return <p>Cargando sesión...</p>;
 
+  /* =========================
+     UI
+  ========================== */
   return (
     <div className="flex flex-col gap-4">
       {/* HEADER */}
@@ -194,12 +182,8 @@ const EM0002_Reservas = () => {
         </div>
       </div>
 
-      <button
-        onClick={crearReservaFake}
-        className="self-start px-3 py-1 rounded bg-blue-600 text-white text-sm"
-      >
-        + Crear reserva de prueba
-      </button>
+      {/* LISTA */}
+      {reservas.length === 0 && <p>No hay reservas para este día</p>}
 
       {reservas.map((reserva) => (
         <div
