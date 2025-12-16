@@ -85,6 +85,28 @@ const haySolape = (
   return inicioA < finB && inicioB < finA;
 };
 
+const esHoy = (fecha: Date): boolean => {
+  const ahora = new Date();
+  return (
+    fecha.getFullYear() === ahora.getFullYear() &&
+    fecha.getMonth() === ahora.getMonth() &&
+    fecha.getDate() === ahora.getDate()
+  );
+};
+
+const obtenerHoraMinimaHoy = (duracion: number): Date => {
+  const ahora = new Date();
+  const minutos = ahora.getMinutes();
+  const resto = minutos % duracion;
+
+  if (resto !== 0) {
+    ahora.setMinutes(minutos + (duracion - resto));
+  }
+
+  ahora.setSeconds(0, 0);
+  return ahora;
+};
+
 /* =====================
    COMPONENTE
 ===================== */
@@ -234,12 +256,21 @@ const CL0007_ReservarCita = () => {
       servicioSeleccionado.duracion
     );
 
+    const horaMinimaHoy = esHoy(fechaSeleccionada)
+      ? obtenerHoraMinimaHoy(servicioSeleccionado.duracion)
+      : null;
+
     return todas.filter((hora) => {
       const inicioNueva = construirFechaHora(fechaSeleccionada, hora);
       const finNueva = new Date(inicioNueva);
       finNueva.setMinutes(
         finNueva.getMinutes() + servicioSeleccionado.duracion
       );
+
+      // BLOQUEO HORAS PASADAS
+      if (horaMinimaHoy && inicioNueva < horaMinimaHoy) {
+        return false;
+      }
 
       return !reservasDia.some((r) => {
         const inicioExistente = r.inicio.toDate();
