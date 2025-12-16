@@ -4,7 +4,12 @@ import { useReservaActiva } from "../../../hooks/useReservaActiva";
 import { useUltimaReserva } from "../../../hooks/useUltimaReserva";
 import type { Categoria, Reserva } from "../../../types/firebase";
 import { useNavigate } from "react-router-dom";
+import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { db } from "../../../services/firebase/firebaseConfig";
 
+/* =====================
+   HELPERS
+===================== */
 const formatearFechaHora = (reserva: Reserva) => {
   const fecha = reserva.inicio.toDate().toLocaleDateString();
   const hora = reserva.inicio.toDate().toLocaleTimeString([], {
@@ -15,23 +20,42 @@ const formatearFechaHora = (reserva: Reserva) => {
   return `${fecha} · ${hora}`;
 };
 
+/* =====================
+   COMPONENTE
+===================== */
 const CL0001_Home = () => {
   const { categorias, loading: loadingCategorias } = useCategorias();
   const { reservaActiva, loading: loadingActiva } = useReservaActiva();
   const { ultimaReserva, loading: loadingUltima } = useUltimaReserva();
   const navigate = useNavigate();
+
+  /* =====================
+     CANCELAR RESERVA
+  ====================== */
+  const cancelarReserva = async (reserva: Reserva) => {
+    const confirmar = window.confirm(
+      "¿Seguro que quieres cancelar la reserva?"
+    );
+    if (!confirmar) return;
+
+    const ref = doc(db, "reservas", reserva.id);
+
+    await updateDoc(ref, {
+      estado: "cancelada",
+      actualizadaEn: Timestamp.now(),
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Buscador */}
-      <div>
-        <div className="flex items-center bg-gray-100 shadow-sm rounded-xl px-4 py-3 border border-gray-200">
-          <Search className="text-gray-500" size={20} />
-          <input
-            type="text"
-            placeholder="Buscar negocios o servicios..."
-            className="ml-3 w-full outline-none text-gray-700 bg-transparent"
-          />
-        </div>
+      <div className="flex items-center bg-gray-100 shadow-sm rounded-xl px-4 py-3 border border-gray-200">
+        <Search className="text-gray-500" size={20} />
+        <input
+          type="text"
+          placeholder="Buscar negocios o servicios..."
+          className="ml-3 w-full outline-none text-gray-700 bg-transparent"
+        />
       </div>
 
       {/* Categorías */}
@@ -48,14 +72,13 @@ const CL0001_Home = () => {
               <div
                 key={c.id}
                 onClick={() => navigate(`/cliente/categoria/${c.id}`)}
-                className="flex flex-col items-center bg-white border border-gray-200 shadow-sm px-4 py-5 rounded-xl min-w-[95px] h-[120px] justify-center transition-all duration-150 active:scale-95"
+                className="flex flex-col items-center bg-white border border-gray-200 shadow-sm px-4 py-5 rounded-xl min-w-[95px] h-[120px] justify-center transition active:scale-95"
               >
                 <img
                   src={`/categorias/${c.icono}`}
                   alt={c.nombre}
                   className="h-10 w-10 object-contain mb-2"
                 />
-
                 <span className="text-sm font-medium text-gray-700 text-center">
                   {c.nombre}
                 </span>
@@ -67,23 +90,38 @@ const CL0001_Home = () => {
       {/* Reserva activa */}
       {!loadingActiva && reservaActiva && (
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-          <h3 className="text-md font-semibold text-green-700 mb-2">
+          <h3 className="text-md font-semibold text-green-700 mb-3">
             Tu reserva activa
           </h3>
 
-          <div className="text-gray-700 mb-2">
-            <p className="font-medium">{reservaActiva.nombreServicio}</p>
-            <p className="text-sm">{reservaActiva.nombreCliente}</p>
-            <p className="text-sm">{formatearFechaHora(reservaActiva)}</p>
+          <div className="flex gap-4">
+            {/* Foto futura */}
+            <div className="w-20 h-20 bg-gray-200 rounded-lg" />
+
+            <div className="flex-1 text-gray-700">
+              <p className="font-semibold">{reservaActiva.nombreNegocio}</p>
+              <p className="text-sm">{reservaActiva.nombreServicio}</p>
+              <p className="text-sm text-gray-500">
+                {formatearFechaHora(reservaActiva)}
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-between mt-3">
-            <button className="bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm active:scale-95 transition">
-              Ver detalles
+          <div className="flex flex-col gap-2 mt-4">
+            <button
+              className="bg-gray-200 text-gray-800 py-2 rounded-lg shadow-sm active:scale-95 transition"
+              onClick={() =>
+                navigate(`/cliente/cambiar-hora/${reservaActiva.id}`)
+              }
+            >
+              Cambiar hora
             </button>
 
-            <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg shadow-sm active:scale-95 transition">
-              Cambiar hora
+            <button
+              onClick={() => cancelarReserva(reservaActiva)}
+              className="bg-red-100 text-red-700 py-2 rounded-lg shadow-sm active:scale-95 transition"
+            >
+              Cancelar reserva
             </button>
           </div>
         </div>
@@ -92,17 +130,28 @@ const CL0001_Home = () => {
       {/* Última reserva */}
       {!loadingUltima && !reservaActiva && ultimaReserva && (
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-2">
+          <h3 className="text-md font-semibold text-gray-800 mb-3">
             Tu última reserva
           </h3>
 
-          <div className="text-gray-700 mb-2">
-            <p className="font-medium">{ultimaReserva.nombreServicio}</p>
-            <p className="text-sm">{ultimaReserva.nombreCliente}</p>
-            <p className="text-sm">{formatearFechaHora(ultimaReserva)}</p>
+          <div className="flex gap-4">
+            <div className="w-20 h-20 bg-gray-200 rounded-lg" />
+
+            <div className="flex-1 text-gray-700">
+              <p className="font-semibold">{ultimaReserva.nombreNegocio}</p>
+              <p className="text-sm">{ultimaReserva.nombreServicio}</p>
+              <p className="text-sm text-gray-500">
+                {formatearFechaHora(ultimaReserva)}
+              </p>
+            </div>
           </div>
 
-          <button className="bg-green-700 text-white px-4 py-2 rounded-lg w-full mt-3 shadow-sm active:scale-95 transition">
+          <button
+            onClick={() =>
+              navigate(`/cliente/negocio/${ultimaReserva.negocioId}`)
+            }
+            className="bg-green-700 text-white py-2 rounded-lg w-full mt-4 shadow-sm active:scale-95 transition"
+          >
             Reservar de nuevo
           </button>
         </div>

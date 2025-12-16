@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNegocio } from "../../../hooks/useNegocio";
 import { useServiciosPorNegocio } from "../../../hooks/useServiciosPorNegocio";
 import {
@@ -8,20 +8,33 @@ import {
   collection,
   Timestamp,
   serverTimestamp,
+  doc,
+  getDoc,
+  updateDoc,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../../../services/firebase/firebaseConfig";
 import { auth } from "../../../services/firebase/firebaseConfig";
-
-const construirFechaHora = (fecha: Date, hora: string): Date => {
-  const [h, m] = hora.split(":").map(Number);
-  const nuevaFecha = new Date(fecha);
-  nuevaFecha.setHours(h, m, 0, 0);
-  return nuevaFecha;
-};
+import type { Reserva } from "../../../types/firebase";
 
 /* =====================
-   TIPOS
+   HELPERS
 ===================== */
+const construirFechaHora = (fecha: Date, hora: string): Date => {
+  const [h, m] = hora.split(":").map(Number);
+  const d = new Date(fecha);
+  d.setHours(h, m, 0, 0);
+  return d;
+};
+
+const formatearHora = (date: Date): string => {
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
+};
+
 type DiaSemanaKey =
   | "lunes"
   | "martes"
@@ -31,9 +44,6 @@ type DiaSemanaKey =
   | "sabado"
   | "domingo";
 
-/* =====================
-   HELPERS
-===================== */
 const normalizarDiaSemana = (dia: string): DiaSemanaKey =>
   dia
     .replace("á", "a")
@@ -44,9 +54,9 @@ const normalizarDiaSemana = (dia: string): DiaSemanaKey =>
 
 const sumarMinutos = (hora: string, minutos: number): string => {
   const [h, m] = hora.split(":").map(Number);
-  const date = new Date();
-  date.setHours(h, m + minutos, 0, 0);
-  return date.toTimeString().slice(0, 5);
+  const d = new Date();
+  d.setHours(h, m + minutos, 0, 0);
+  return formatearHora(d);
 };
 
 const generarHorasDisponibles = (
@@ -57,7 +67,6 @@ const generarHorasDisponibles = (
 
   tramos.forEach(({ inicio, fin }) => {
     let actual = inicio;
-
     while (sumarMinutos(actual, duracion) <= fin) {
       horas.push(actual);
       actual = sumarMinutos(actual, duracion);
@@ -72,21 +81,11 @@ const generarHorasDisponibles = (
 ===================== */
 const CL0007_ReservarCita = () => {
   const navigate = useNavigate();
-  const { negocioId = "", servicioId = "" } = useParams();
+  const { negocioId, servicioId, reservaId } = useParams();
+  const esCambioHora = Boolean(reservaId);
 
   /* =====================
-     DATA FIREBASE
-  ====================== */
-  const { negocio } = useNegocio(negocioId);
-  const { servicios } = useServiciosPorNegocio(negocioId);
-
-  const servicioSeleccionado = useMemo(
-    () => servicios.find((s) => s.id === servicioId),
-    [servicios, servicioId]
-  );
-
-  /* =====================
-     FECHA ACTUAL (normalizada)
+     FECHA BASE
   ====================== */
   const hoy = useMemo(() => {
     const d = new Date();
@@ -95,15 +94,87 @@ const CL0007_ReservarCita = () => {
   }, []);
 
   /* =====================
-     ESTADOS CALENDARIO
+     ESTADOS
   ====================== */
+  const [reservaOriginal, setReservaOriginal] = useState<Reserva | null>(null);
   const [mesActual, setMesActual] = useState(
     new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   );
-
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(hoy);
+  const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null);
+  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
 
-  const obtenerDiasMes = (): (Date | null)[] => {
+  /* =====================
+     CARGAR RESERVA ORIGINAL
+  ====================== */
+  useEffect(() => {
+    const cargarReserva = async () => {
+      if (!reservaId) return;
+
+      const snap = await getDoc(doc(db, "reservas", reservaId));
+      if (snap.exists()) {
+        setReservaOriginal({
+          id: snap.id,
+          ...(snap.data() as Omit<Reserva, "id">),
+        });
+      }
+    };
+
+    cargarReserva();
+  }, [reservaId]);
+
+  /* =====================
+     IDS FINALES
+  ====================== */
+  const negocioFinalId = reservaOriginal?.negocioId ?? negocioId ?? "";
+  const servicioFinalId = reservaOriginal?.servicioId ?? servicioId ?? "";
+
+  /* =====================
+     DATA
+  ====================== */
+  const { negocio } = useNegocio(negocioFinalId);
+  const { servicios } = useServiciosPorNegocio(negocioFinalId);
+
+  const servicioSeleccionado = useMemo(
+    () => servicios.find((s) => s.id === servicioFinalId),
+    [servicios, servicioFinalId]
+  );
+
+  /* =====================
+     HORAS OCUPADAS (solo hora inicio)
+  ====================== */
+  useEffect(() => {
+    const cargarHorasOcupadas = async () => {
+      if (!negocioFinalId) return;
+
+      const q = query(
+        collection(db, "reservas"),
+        where("negocioId", "==", negocioFinalId),
+        where("estado", "==", "confirmada")
+      );
+
+      const snap = await getDocs(q);
+      const ocupadas: string[] = [];
+
+      snap.forEach((d) => {
+        const inicio = d.data().inicio.toDate();
+
+        // mismo día en hora local
+        if (inicio.toDateString() === fechaSeleccionada.toDateString()) {
+          ocupadas.push(formatearHora(inicio));
+        }
+      });
+
+      setHorasOcupadas(ocupadas);
+    };
+
+    cargarHorasOcupadas();
+  }, [fechaSeleccionada, negocioFinalId]);
+
+  /* =====================
+     CALENDARIO
+  ====================== */
+  const diasMes = useMemo(() => {
     const dias: (Date | null)[] = [];
     const primerDia = new Date(
       mesActual.getFullYear(),
@@ -124,12 +195,10 @@ const CL0007_ReservarCita = () => {
     }
 
     return dias;
-  };
+  }, [mesActual]);
 
-  const esDiaPasado = (dia: Date) => dia < hoy;
-  const esDomingo = (dia: Date) => dia.getDay() === 0;
-
-  const diasMes = obtenerDiasMes();
+  const esDiaPasado = (d: Date) => d < hoy;
+  const esDomingo = (d: Date) => d.getDay() === 0;
 
   const diaSemana = useMemo<DiaSemanaKey>(() => {
     return normalizarDiaSemana(
@@ -140,7 +209,7 @@ const CL0007_ReservarCita = () => {
   }, [fechaSeleccionada]);
 
   /* =====================
-     HORAS DISPONIBLES (REALES)
+     HORAS DISPONIBLES
   ====================== */
   const horasDisponibles = useMemo(() => {
     if (!negocio?.horarios || !servicioSeleccionado) return [];
@@ -148,14 +217,17 @@ const CL0007_ReservarCita = () => {
     const horarioDia = negocio.horarios[diaSemana];
     if (!horarioDia || !horarioDia.activo) return [];
 
-    return generarHorasDisponibles(
+    const todas = generarHorasDisponibles(
       horarioDia.tramos,
       servicioSeleccionado.duracion
     );
-  }, [negocio, servicioSeleccionado, diaSemana]);
 
-  const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null);
+    return todas.filter((h) => !horasOcupadas.includes(h));
+  }, [negocio, servicioSeleccionado, diaSemana, horasOcupadas]);
 
+  /* =====================
+     CONFIRMAR
+  ====================== */
   const confirmarReserva = async () => {
     if (
       !negocio ||
@@ -167,37 +239,53 @@ const CL0007_ReservarCita = () => {
     }
 
     const inicioDate = construirFechaHora(fechaSeleccionada, horaSeleccionada);
+
+    const q = query(
+      collection(db, "reservas"),
+      where("negocioId", "==", negocio.id),
+      where("estado", "==", "confirmada"),
+      where("inicio", "==", Timestamp.fromDate(inicioDate))
+    );
+
+    const snap = await getDocs(q);
+    if (!snap.empty) return;
+
+    if (esCambioHora && reservaOriginal) {
+      await updateDoc(doc(db, "reservas", reservaOriginal.id), {
+        estado: "cancelada",
+        actualizadaEn: Timestamp.now(),
+      });
+    }
+
+    const usuarioSnap = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
+
+    const nombreCliente = usuarioSnap.exists()
+      ? usuarioSnap.data().nombre
+      : "Cliente";
+
     const finDate = new Date(inicioDate);
     finDate.setMinutes(finDate.getMinutes() + servicioSeleccionado.duracion);
 
     await addDoc(collection(db, "reservas"), {
-      // relaciones
       clienteId: auth.currentUser.uid,
       negocioId: negocio.id,
       servicioId: servicioSeleccionado.id,
 
-      // denormalizado
-      nombreCliente: auth.currentUser.displayName ?? "Cliente",
+      nombreCliente,
       nombreNegocio: negocio.nombre,
       nombreServicio: servicioSeleccionado.nombre,
 
-      // tiempo
       inicio: Timestamp.fromDate(inicioDate),
       fin: Timestamp.fromDate(finDate),
 
-      // servicio
       duracion: servicioSeleccionado.duracion,
       precio: servicioSeleccionado.precio,
 
-      // estado
       estado: "confirmada",
-
-      // control
       creadaEn: serverTimestamp(),
       actualizadaEn: serverTimestamp(),
     });
 
-    alert("Reserva confirmada ✅");
     navigate("/cliente");
   };
 
@@ -206,7 +294,6 @@ const CL0007_ReservarCita = () => {
   ====================== */
   return (
     <div className="flex flex-col gap-5">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
@@ -214,10 +301,11 @@ const CL0007_ReservarCita = () => {
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-lg font-semibold">Reserva una cita</h1>
+        <h1 className="text-lg font-semibold">
+          {esCambioHora ? "Cambiar hora de tu cita" : "Reserva una cita"}
+        </h1>
       </div>
 
-      {/* Info */}
       <div className="bg-white border rounded-xl p-4 text-sm">
         <p>
           <strong>Negocio:</strong> {negocio?.nombre ?? "Cargando..."}
@@ -275,10 +363,10 @@ const CL0007_ReservarCita = () => {
                   setFechaSeleccionada(dia);
                   setHoraSeleccionada(null);
                 }}
-                className={`h-9 rounded-full text-sm transition
+                className={`h-9 rounded-full text-sm
                   ${
                     esDiaPasado(dia) || esDomingo(dia)
-                      ? "text-gray-300 cursor-not-allowed"
+                      ? "text-gray-300"
                       : fechaSeleccionada.toDateString() === dia.toDateString()
                       ? "bg-[#0f6f63] text-white"
                       : "hover:bg-gray-100"
@@ -321,7 +409,7 @@ const CL0007_ReservarCita = () => {
         )}
       </div>
 
-      {/* Resumen (SIEMPRE visible) */}
+      {/* Resumen */}
       <div className="bg-white border rounded-xl p-4">
         <div className="flex justify-between">
           <div>
@@ -345,14 +433,13 @@ const CL0007_ReservarCita = () => {
         </div>
       </div>
 
-      {/* Confirmar */}
       <button
         disabled={!horaSeleccionada}
         onClick={confirmarReserva}
         className={`py-3 rounded-xl text-white font-medium
-    ${horaSeleccionada ? "bg-green-700" : "bg-green-700 opacity-40"}`}
+        ${horaSeleccionada ? "bg-green-700" : "bg-green-700 opacity-40"}`}
       >
-        Confirmar reserva
+        {esCambioHora ? "Confirmar cambio" : "Confirmar reserva"}
       </button>
     </div>
   );

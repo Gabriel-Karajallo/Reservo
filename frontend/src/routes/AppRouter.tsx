@@ -57,6 +57,10 @@ const AppRouter = () => {
               path="reservar/:negocioId/:servicioId"
               element={<CL0007_ReservarCita />}
             />
+            <Route
+              path="cambiar-hora/:reservaId"
+              element={<CL0007_ReservarCita />}
+            />
           </Route>
         </Route>
 
