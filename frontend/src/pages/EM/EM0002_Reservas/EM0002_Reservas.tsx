@@ -17,21 +17,28 @@ import { useAuth } from "../../../hooks/useAuth";
 ========================== */
 type ModoModal = "ver" | "cambiarHora" | "confirmarCancelacion";
 
+type ReservaConEstado = Reserva & {
+  estadoEfectivo: "confirmada" | "finalizada" | "cancelada";
+};
+
+/* =========================
+   COMPONENTE
+========================== */
 const EM0002_Reservas = () => {
   const { userData, loading, loadingUserData } = useAuth();
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
-  const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [reservas, setReservas] = useState<ReservaConEstado[]>([]);
 
   const [reservaSeleccionada, setReservaSeleccionada] =
-    useState<Reserva | null>(null);
+    useState<ReservaConEstado | null>(null);
 
   const [modoModal, setModoModal] = useState<ModoModal>("ver");
   const [nuevaHora, setNuevaHora] = useState("");
   const [errorSolapamiento, setErrorSolapamiento] = useState("");
 
   /* =========================
-     CARGAR RESERVAS REALES
+     CARGAR RESERVAS
   ========================== */
   useEffect(() => {
     if (loading || loadingUserData) return;
@@ -44,18 +51,30 @@ const EM0002_Reservas = () => {
       );
 
       const snapshot = await getDocs(q);
+      const ahora = new Date();
 
-      const reservasDia = snapshot.docs
-        .map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Reserva)
-        )
+      const reservasDia: ReservaConEstado[] = snapshot.docs
+        .map((docu) => {
+          const reserva = {
+            id: docu.id,
+            ...docu.data(),
+          } as Reserva;
+
+          const fin = new Date(reserva.fin.seconds * 1000);
+
+          let estadoEfectivo: ReservaConEstado["estadoEfectivo"] =
+            reserva.estado;
+
+          if (reserva.estado === "confirmada" && fin < ahora) {
+            estadoEfectivo = "finalizada";
+          }
+
+          return {
+            ...reserva,
+            estadoEfectivo,
+          };
+        })
         .filter((reserva) => {
-          if (reserva.estado === "cancelada") return false;
-
           const fechaReserva = new Date(reserva.inicio.seconds * 1000);
 
           return (
@@ -71,6 +90,29 @@ const EM0002_Reservas = () => {
 
     cargarReservas();
   }, [loading, loadingUserData, userData, fechaSeleccionada]);
+
+  /* =========================
+     HELPERS
+  ========================== */
+  const esEditable = (reserva: ReservaConEstado) =>
+    reserva.estadoEfectivo === "confirmada";
+
+  const cerrarModal = () => {
+    setReservaSeleccionada(null);
+    setModoModal("ver");
+    setNuevaHora("");
+    setErrorSolapamiento("");
+  };
+
+  const refrescarDia = () => {
+    setFechaSeleccionada(new Date(fechaSeleccionada));
+  };
+
+  const cambiarDia = (dias: number) => {
+    const nuevaFecha = new Date(fechaSeleccionada);
+    nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+    setFechaSeleccionada(nuevaFecha);
+  };
 
   /* =========================
      ACCIONES EMPRESA
@@ -101,7 +143,6 @@ const EM0002_Reservas = () => {
 
     const nuevoFin = new Date(nuevoInicio.getTime() + duracionMs);
 
-    // Anti-solapamiento
     const haySolape = reservas.some((r) => {
       if (r.id === reservaSeleccionada.id) return false;
 
@@ -126,27 +167,9 @@ const EM0002_Reservas = () => {
     refrescarDia();
   };
 
-  /* =========================
-     HELPERS
-  ========================== */
-  const cerrarModal = () => {
-    setReservaSeleccionada(null);
-    setModoModal("ver");
-    setNuevaHora("");
-    setErrorSolapamiento("");
-  };
-
-  const refrescarDia = () => {
-    setFechaSeleccionada(new Date(fechaSeleccionada));
-  };
-
-  const cambiarDia = (dias: number) => {
-    const nuevaFecha = new Date(fechaSeleccionada);
-    nuevaFecha.setDate(nuevaFecha.getDate() + dias);
-    setFechaSeleccionada(nuevaFecha);
-  };
-
-  if (loading || loadingUserData) return <p>Cargando sesión...</p>;
+  if (loading || loadingUserData) {
+    return <p>Cargando sesión...</p>;
+  }
 
   /* =========================
      UI
@@ -214,8 +237,17 @@ const EM0002_Reservas = () => {
             </p>
           </div>
 
-          <span className="text-sm px-2 py-1 rounded bg-green-100 text-green-700">
-            {reserva.estado}
+          <span
+            className={`text-sm px-2 py-1 rounded
+              ${
+                reserva.estadoEfectivo === "confirmada"
+                  ? "bg-green-100 text-green-700"
+                  : reserva.estadoEfectivo === "finalizada"
+                  ? "bg-gray-200 text-gray-600"
+                  : "bg-red-100 text-red-700"
+              }`}
+          >
+            {reserva.estadoEfectivo}
           </span>
         </div>
       ))}
@@ -243,7 +275,10 @@ const EM0002_Reservas = () => {
               -{" "}
               {new Date(
                 reservaSeleccionada.fin.seconds * 1000
-              ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              ).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </p>
 
             {modoModal === "cambiarHora" && (
@@ -274,7 +309,7 @@ const EM0002_Reservas = () => {
                 Cerrar
               </button>
 
-              {modoModal === "ver" && (
+              {modoModal === "ver" && esEditable(reservaSeleccionada) && (
                 <>
                   <button
                     onClick={() => setModoModal("confirmarCancelacion")}
@@ -289,6 +324,12 @@ const EM0002_Reservas = () => {
                     Cambiar hora
                   </button>
                 </>
+              )}
+
+              {modoModal === "ver" && !esEditable(reservaSeleccionada) && (
+                <p className="text-sm text-gray-500">
+                  Esta reserva ya no se puede modificar
+                </p>
               )}
 
               {modoModal === "confirmarCancelacion" && (
