@@ -2,10 +2,11 @@ import { Search } from "lucide-react";
 import { useCategorias } from "../../../hooks/useCategorias";
 import { useReservaActiva } from "../../../hooks/useReservaActiva";
 import { useUltimaReserva } from "../../../hooks/useUltimaReserva";
-import type { Categoria, Reserva } from "../../../types/firebase";
+import type { Categoria, Negocio, Reserva } from "../../../types/firebase";
 import { useNavigate } from "react-router-dom";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "../../../services/firebase/firebaseConfig";
+import { useEffect, useRef, useState } from "react";
 
 /* =====================
    HELPERS
@@ -46,11 +47,45 @@ const CL0001_Home = () => {
     });
   };
 
+  const [negocioReserva, setNegocioReserva] = useState<Negocio | null>(null);
+
+  useEffect(() => {
+    const cargarNegocio = async () => {
+      if (!reservaActiva?.negocioId) return;
+
+      const snap = await getDoc(doc(db, "negocios", reservaActiva.negocioId));
+
+      if (snap.exists()) {
+        setNegocioReserva(snap.data() as Negocio);
+      }
+    };
+
+    cargarNegocio();
+  }, [reservaActiva]);
+
+  //Scroll infinito de categorias
+  const categoriasLoop: Categoria[] =
+    categorias.length > 0 ? [...categorias, ...categorias] : [];
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (el.scrollLeft >= el.scrollWidth / 2) {
+        el.scrollLeft = 0;
+      }
+    };
+
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   //region renderizado
   return (
-    <div className="flex flex-col gap-6">
-      {/* Buscador */}
-      <div className="bg-white rounded-2xl px-4 py-4 shadow-sm">
+    <div className="flex flex-col gap-8">
+      {/* ================= BUSCADOR ================= */}
+      <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
         <div className="flex items-center gap-3">
           <Search className="text-gray-400" size={22} />
           <input
@@ -61,108 +96,144 @@ const CL0001_Home = () => {
         </div>
       </div>
 
-      {/* Categorías */}
-      <div>
-        <h2 className="text-base font-semibold mb-3 text-gray-800">
-          Categorías
-        </h2>
+      {/* ================= CATEGORÍAS ================= */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-gray-800">Categorías</h2>
 
-        <div className="flex gap-4 overflow-x-auto no-scrollbar">
+        <div
+          ref={scrollRef}
+          className="flex gap-5 overflow-x-auto no-scrollbar px-3 pb-1"
+        >
           {loadingCategorias && (
-            <span className="text-gray-400">Cargando categorías…</span>
+            <span className="text-gray-400 text-sm">Cargando categorías…</span>
           )}
 
           {!loadingCategorias &&
-            categorias.map((c: Categoria) => (
+            categoriasLoop.map((c: Categoria, index: number) => (
               <button
-                key={c.id}
+                key={`${c.id}-${index}`}
                 onClick={() => navigate(`/cliente/categoria/${c.id}`)}
-                className="flex flex-col items-center min-w-[72px] active:scale-95 transition"
+                className="flex flex-col items-center min-w-[72px] transition active:scale-95"
               >
-                {/* CÍRCULO */}
+                {/* Imagen circular */}
                 <div
                   className="
-            w-16 h-16
-            rounded-full
-            bg-white
-            shadow-sm
-            flex items-center justify-center
-            mb-2
-          "
+              w-20 h-20
+              rounded-full
+              overflow-hidden
+              shadow-sm
+              bg-white
+              mb-2
+            "
                 >
                   <img
                     src={`/categorias/${c.icono}`}
                     alt={c.nombre}
-                    className="w-8 h-8 object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
 
-                {/* TEXTO */}
+                {/* Nombre */}
                 <span className="text-xs font-medium text-gray-700 text-center leading-tight">
                   {c.nombre}
                 </span>
               </button>
             ))}
         </div>
-      </div>
 
-      {/* Reserva activa */}
-      {!loadingActiva && reservaActiva && (
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-          {/* Imagen */}
-          <div className="h-36 bg-gray-200" />
+        {/* Separador suave */}
+        <div className="h-px bg-gray-100" />
+      </section>
 
-          {/* Contenido */}
-          <div className="p-4">
-            <p className="text-sm text-gray-500 mb-1">Tu próxima cita</p>
+      {/* ================= RESERVA ACTIVA ================= */}
+      {!loadingActiva && reservaActiva && negocioReserva && (
+        <section className="space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Tu próxima cita</p>
 
-            <h3 className="text-lg font-semibold">
-              {reservaActiva.nombreServicio}
-            </h3>
+          {/* Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Imagen */}
+            <div className="h-36 bg-gray-200">
+              <img
+                src={negocioReserva.imagenPortada ?? "/placeholder-negocio.jpg"}
+                alt={negocioReserva.nombre}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            <p className="text-sm text-gray-600">
-              {reservaActiva.nombreNegocio}
-            </p>
+            {/* Contenido */}
+            <div className="p-5 space-y-2">
+              <p className="text-base font-semibold text-gray-900">
+                {reservaActiva.nombreServicio}
+              </p>
 
-            <p className="text-sm text-gray-500 mt-1">
-              {formatearFechaHora(reservaActiva)}
-            </p>
+              <p className="text-sm text-gray-500">
+                con <span className="font-medium">Profesional asignado</span>
+              </p>
 
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() =>
-                  navigate(`/cliente/cambiar-hora/${reservaActiva.id}`)
-                }
-                className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-medium"
-              >
-                Cambiar
-              </button>
+              <p className="text-sm text-gray-500">
+                {formatearFechaHora(reservaActiva)}
+              </p>
 
-              <button
-                onClick={() => cancelarReserva(reservaActiva)}
-                className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg text-sm font-medium"
-              >
-                Cancelar
-              </button>
+              {/* Acciones */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() =>
+                    navigate(`/cliente/cambiar-hora/${reservaActiva.id}`)
+                  }
+                  className="
+                  flex-1 h-10 rounded-xl
+                  bg-[#1f2f4d] text-white
+                  text-sm font-medium
+                  transition active:scale-95
+                "
+                >
+                  Cambiar
+                </button>
+
+                <button
+                  onClick={() => cancelarReserva(reservaActiva)}
+                  className="
+                  flex-1 h-10 rounded-xl
+                  bg-red-50 text-red-600
+                  text-sm font-medium
+                  transition active:scale-95
+                "
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Negocio + dirección */}
+          <div className=" border-t border-gray-100 px-1">
+            <p className="text-sm font-medium text-gray-800">
+              {negocioReserva.nombre}
+            </p>
+            <p className="text-xs text-gray-500">{negocioReserva.direccion}</p>
+          </div>
+        </section>
       )}
 
-      {/* Última reserva */}
+      {/* ================= ÚLTIMA RESERVA ================= */}
       {!loadingUltima && !reservaActiva && ultimaReserva && (
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-3">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-800">
             Tu última reserva
           </h3>
 
           <div className="flex gap-4">
-            <div className="w-20 h-20 bg-gray-200 rounded-lg" />
+            <div className="w-20 h-20 bg-gray-200 rounded-xl" />
 
-            <div className="flex-1 text-gray-700">
-              <p className="font-semibold">{ultimaReserva.nombreNegocio}</p>
-              <p className="text-sm">{ultimaReserva.nombreServicio}</p>
-              <p className="text-sm text-gray-500">
+            <div className="flex-1">
+              <p className="text-sm font-semibold">
+                {ultimaReserva.nombreNegocio}
+              </p>
+              <p className="text-sm text-gray-600">
+                {ultimaReserva.nombreServicio}
+              </p>
+              <p className="text-xs text-gray-500">
                 {formatearFechaHora(ultimaReserva)}
               </p>
             </div>
@@ -173,38 +244,34 @@ const CL0001_Home = () => {
               navigate(`/cliente/negocio/${ultimaReserva.negocioId}`)
             }
             className="
-              bg-[#0f6f63]
-              text-white
-              py-2.5
-              rounded-xl
-              text-sm
-              font-medium
-              mt-4
-              transition
-              active:scale-95
-            "
+            w-full py-2.5 rounded-xl
+            bg-[#1f2f4d] text-white
+            text-sm font-medium
+            transition active:scale-95
+          "
           >
             Reservar de nuevo
           </button>
-        </div>
+        </section>
       )}
 
-      <div className="text-center text-gray-400 text-sm py-8">
+      {/* ================= TEXTO INFORMATIVO ================= */}
+      <div className="text-center text-gray-400 text-sm py-6">
         Pronto verás sugerencias según tus reservas
       </div>
 
-      {/* Sin reservas */}
+      {/* ================= SIN RESERVAS ================= */}
       {!loadingActiva && !loadingUltima && !reservaActiva && !ultimaReserva && (
-        <div className="text-center text-gray-500 mt-8">
-          <p className="text-sm text-gray-400">Aún no tienes reservas</p>
-          <p className="text-sm font-medium mt-1 text-gray-700">
+        <div className="text-center text-gray-400 text-sm py-6">
+          <p>Aún no tienes reservas</p>
+          <p className="font-medium text-gray-700 mt-1">
             Encuentra tu próximo servicio en Reservo
           </p>
         </div>
       )}
     </div>
   );
-  //endregion
 };
+//endregion
 
 export default CL0001_Home;
