@@ -55,6 +55,7 @@ export interface Negocio {
   direccion: string;
   descripcion: string;
   horarios?: HorariosSemana;
+  imagenPortada?: string;
 }
 
 export interface Servicio {
