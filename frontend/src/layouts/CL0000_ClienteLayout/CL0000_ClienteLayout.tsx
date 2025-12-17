@@ -5,24 +5,23 @@ const CL0000_ClienteLayout = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Barra superior */}
-      <header className="w-full py-3 bg-[#0f6f63] shadow-sm flex justify-center items-center">
-        <img src="/titulo.png" alt="Reservo" className="w-40 opacity-90 p-2" />
+      <header className="w-full h-14 bg-[#1F2A44] flex items-center justify-center">
+        <img src="/titulo.png" alt="Reservo" className="h-6 opacity-90" />
       </header>
 
       {/* Contenido dinámico */}
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-20">
         <Outlet />
       </main>
 
       {/* Barra inferior de navegación */}
-      <nav className="w-full border-t bg-white shadow-lg">
+      <nav className="w-full bg-white border-t border-gray-200">
         <div className="flex justify-around py-2">
-          {/* Inicio */}
           <NavLink
             to="/cliente/home"
             className={({ isActive }) =>
-              `flex flex-col items-center text-sm gap-1 ${
-                isActive ? "text-[#0f6f63] font-medium" : "text-gray-500"
+              `flex flex-col items-center gap-1 text-xs ${
+                isActive ? "text-[#1F2A44] font-medium" : "text-gray-400"
               }`
             }
           >
@@ -30,12 +29,11 @@ const CL0000_ClienteLayout = () => {
             <span>Inicio</span>
           </NavLink>
 
-          {/* Reservas */}
           <NavLink
             to="/cliente/reservas"
             className={({ isActive }) =>
-              `flex flex-col items-center text-sm gap-1 ${
-                isActive ? "text-[#0f6f63] font-medium" : "text-gray-500"
+              `flex flex-col items-center gap-1 text-xs ${
+                isActive ? "text-[#0B3C3D] font-medium" : "text-gray-400"
               }`
             }
           >
@@ -43,12 +41,11 @@ const CL0000_ClienteLayout = () => {
             <span>Reservas</span>
           </NavLink>
 
-          {/* Favoritos */}
           <NavLink
             to="/cliente/favoritos"
             className={({ isActive }) =>
-              `flex flex-col items-center text-sm gap-1 ${
-                isActive ? "text-[#0f6f63] font-medium" : "text-gray-500"
+              `flex flex-col items-center gap-1 text-xs ${
+                isActive ? "text-[#0B3C3D] font-medium" : "text-gray-400"
               }`
             }
           >
@@ -56,12 +53,11 @@ const CL0000_ClienteLayout = () => {
             <span>Favoritos</span>
           </NavLink>
 
-          {/* Perfil */}
           <NavLink
             to="/cliente/perfil"
             className={({ isActive }) =>
-              `flex flex-col items-center text-sm gap-1 ${
-                isActive ? "text-[#0f6f63] font-medium" : "text-gray-500"
+              `flex flex-col items-center gap-1 text-xs ${
+                isActive ? "text-[#0B3C3D] font-medium" : "text-gray-400"
               }`
             }
           >
