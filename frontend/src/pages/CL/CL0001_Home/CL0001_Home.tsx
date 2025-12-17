@@ -155,7 +155,7 @@ const CL0001_Home = () => {
             {/* Imagen */}
             <div className="h-36 bg-gray-200">
               <img
-                src={negocioReserva.imagenPortada ?? "/placeholder-negocio.jpg"}
+                src={negocioReserva.portadaUrl ?? "/placeholder-negocio.jpg"}
                 alt={negocioReserva.nombre}
                 className="w-full h-full object-cover"
               />
