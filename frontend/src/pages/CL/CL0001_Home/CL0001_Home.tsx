@@ -83,7 +83,7 @@ const CL0001_Home = () => {
 
   //region renderizado
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-7">
       {/* ================= BUSCADOR ================= */}
       <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
         <div className="flex items-center gap-3">
@@ -98,7 +98,9 @@ const CL0001_Home = () => {
 
       {/* ================= CATEGORÍAS ================= */}
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-gray-800">Categorías</h2>
+        <h2 className="text-sm font-bold tracking-tight text-gray-900">
+          Categorías
+        </h2>
 
         <div
           ref={scrollRef}
@@ -134,7 +136,7 @@ const CL0001_Home = () => {
                 </div>
 
                 {/* Nombre */}
-                <span className="text-xs font-medium text-gray-700 text-center leading-tight">
+                <span className="text-xs font-semibold text-gray-800 text-center leading-tight">
                   {c.nombre}
                 </span>
               </button>
@@ -163,7 +165,7 @@ const CL0001_Home = () => {
 
             {/* Contenido */}
             <div className="p-5 space-y-2">
-              <p className="text-base font-semibold text-gray-900">
+              <p className="text-lg font-bold tracking-tight text-gray-900">
                 {reservaActiva.nombreServicio}
               </p>
 
@@ -171,7 +173,7 @@ const CL0001_Home = () => {
                 con <span className="font-medium">Profesional asignado</span>
               </p>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 {formatearFechaHora(reservaActiva)}
               </p>
 
@@ -182,11 +184,11 @@ const CL0001_Home = () => {
                     navigate(`/cliente/cambiar-hora/${reservaActiva.id}`)
                   }
                   className="
-                  flex-1 h-10 rounded-xl
-                  bg-[#1f2f4d] text-white
-                  text-sm font-medium
-                  transition active:scale-95
-                "
+  flex-1 h-11 rounded-xl
+  bg-[#1f2f4d] text-white
+  text-sm font-semibold tracking-wide
+  transition active:scale-95
+"
                 >
                   Cambiar
                 </button>
@@ -194,11 +196,11 @@ const CL0001_Home = () => {
                 <button
                   onClick={() => cancelarReserva(reservaActiva)}
                   className="
-                  flex-1 h-10 rounded-xl
-                  bg-red-50 text-red-600
-                  text-sm font-medium
-                  transition active:scale-95
-                "
+  flex-1 h-11 rounded-xl
+  bg-red-50 text-red-600
+  text-sm font-semibold
+  transition active:scale-95
+"
                 >
                   Cancelar
                 </button>
@@ -208,7 +210,7 @@ const CL0001_Home = () => {
 
           {/* Negocio + dirección */}
           <div className=" border-t border-gray-100 px-1">
-            <p className="text-sm font-medium text-gray-800">
+            <p className="text-sm font-bold tracking-wide text-gray-900 uppercase">
               {negocioReserva.nombre}
             </p>
             <p className="text-xs text-gray-500">{negocioReserva.direccion}</p>
@@ -233,7 +235,7 @@ const CL0001_Home = () => {
               <p className="text-sm text-gray-600">
                 {ultimaReserva.nombreServicio}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-600">
                 {formatearFechaHora(ultimaReserva)}
               </p>
             </div>

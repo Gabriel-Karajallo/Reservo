@@ -16,6 +16,9 @@ import CL0002_Reservas from "../pages/CL/CL0002_Reservas/CL0002_Reservas";
 import CL0003_Favoritos from "../pages/CL/CL0003_Favoritos/CL0003_Favoritos";
 import CL0004_Perfil from "../pages/CL/CL0004_Perfil/CL0004_Perfil";
 import CL0007_ReservarCita from "../pages/CL/CL0007_ReservarCita/CL0007_ReservarCita";
+import CL0008_Configuracion from "../pages/CL/CL0008_Configuracion/CL0008_Configuracion";
+import CL0009_DetallesCuenta from "../pages/CL/CL0009_DetallesCuenta/CL0009_DetallesCuenta";
+import CL0010_PrivacidadDatos from "../pages/CL/CL0010_PrivacidadDatos/CL0010_PrivacidadDatos";
 
 // Empresa pages
 import EM0001_Panel from "../pages/EM/EM0001_Panel/EM0001_Panel";
@@ -26,7 +29,8 @@ import EM0003_Perfil from "../pages/EM/EM0003_Perfil/EM0003_Perfil";
 import AD0001_Panel from "../pages/AD/AD0001_Panel/AD0001_Panel";
 import CL0005_NegociosCategoria from "../pages/CL/CL0005_NegociosCategoria/CL0005_NegociosCategoria";
 import CL0006_NegocioDetalle from "../pages/CL/CL0006_NegocioDetalle/CL0006_NegocioDetalle";
-
+import CL0011_ConfiguracionGeneral from "../pages/CL/CL0011_ConfiguracionGeneral/CL0011_ConfiguracionGeneral";
+import CL0012_Soporte from "../pages/CL/CL0012_Soporte/CL0012_Soporte";
 const AppRouter = () => {
   return (
     <Routes>
@@ -45,6 +49,20 @@ const AppRouter = () => {
             <Route path="reservas" element={<CL0002_Reservas />} />
             <Route path="favoritos" element={<CL0003_Favoritos />} />
             <Route path="perfil" element={<CL0004_Perfil />} />
+
+            {/* CONFIGURACIÓN */}
+            <Route path="configuracion" element={<CL0008_Configuracion />} />
+            <Route path="detalles-cuenta" element={<CL0009_DetallesCuenta />} />
+            <Route
+              path="privacidad-datos"
+              element={<CL0010_PrivacidadDatos />}
+            />
+            <Route
+              path="configuracion-general"
+              element={<CL0011_ConfiguracionGeneral />}
+            />
+            <Route path="soporte" element={<CL0012_Soporte />} />
+
             <Route
               path="categoria/:categoriaId"
               element={<CL0005_NegociosCategoria />}
