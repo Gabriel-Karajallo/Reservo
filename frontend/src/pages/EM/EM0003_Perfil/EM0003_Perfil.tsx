@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../../../services/firebase/firebaseConfig";
 import EM0003_Horarios from "./EM0003_Horarios";
-
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   collection,
   query,
@@ -38,6 +38,95 @@ const EM0003_Perfil = () => {
      ESTADO
   ========================== */
   const [negocio, setNegocio] = useState<Negocio | null>(null);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+
+  /* =========================
+     FIREBASE STORAGE
+  ========================== */
+  const storage = getStorage();
+
+  const subirImagen = async (archivo: File, ruta: string): Promise<string> => {
+    const referencia = ref(storage, ruta);
+    await uploadBytes(referencia, archivo);
+    return await getDownloadURL(referencia);
+  };
+
+  /* =========================
+     SUBIR LOGO
+  ========================== */
+  const subirLogo = async (file: File) => {
+    if (!negocio) return;
+
+    setSubiendoImagen(true);
+
+    const url = await subirImagen(file, `negocios/${negocio.id}/logo.jpg`);
+
+    await updateDoc(doc(db, "negocios", negocio.id), {
+      logoUrl: url,
+    });
+
+    setNegocio({
+      ...negocio,
+      logoUrl: url,
+    });
+
+    setSubiendoImagen(false);
+  };
+
+  /* =========================
+     SUBIR PORTADA
+  ========================== */
+  const subirPortada = async (file: File) => {
+    if (!negocio) return;
+
+    setSubiendoImagen(true);
+
+    const url = await subirImagen(file, `negocios/${negocio.id}/portada.jpg`);
+
+    await updateDoc(doc(db, "negocios", negocio.id), {
+      portadaUrl: url,
+    });
+
+    setNegocio({
+      ...negocio,
+      portadaUrl: url,
+    });
+
+    setSubiendoImagen(false);
+  };
+
+  /* =========================
+     SUBIR IMAGEN GALERÍA
+  ========================== */
+  const subirImagenGaleria = async (file: File) => {
+    if (!negocio) return;
+
+    setSubiendoImagen(true);
+
+    const nombre = crypto.randomUUID();
+
+    const url = await subirImagen(
+      file,
+      `negocios/${negocio.id}/galeria/${nombre}.jpg`
+    );
+
+    const nuevasUrls = [...(negocio.galeriaUrls ?? []), url];
+
+    await updateDoc(doc(db, "negocios", negocio.id), {
+      galeriaUrls: nuevasUrls,
+    });
+
+    setNegocio({
+      ...negocio,
+      galeriaUrls: nuevasUrls,
+    });
+
+    setSubiendoImagen(false);
+  };
+
+  /* =========================
+     ESTADO
+  ========================== */
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [cargando, setCargando] = useState(true);
 
@@ -162,12 +251,132 @@ const EM0003_Perfil = () => {
   if (cargando) return <p>Cargando perfil…</p>;
   if (!negocio) return <p>No se encontró negocio</p>;
 
+  //region renderizado
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* CABECERA */}
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+      {/* ================= CABECERA ================= */}
       <header>
-        <h1 className="text-2xl font-semibold">Perfil de la empresa</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Perfil de la empresa
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Gestiona la imagen pública de tu negocio
+        </p>
       </header>
+
+      {subiendoImagen && (
+        <div className="text-sm text-gray-500">Subiendo imagen…</div>
+      )}
+
+      {/* ================= PORTADA + LOGO ================= */}
+      <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* Portada */}
+        <div className="relative h-48 bg-gray-200">
+          {negocio.portadaUrl ? (
+            <img
+              src={negocio.portadaUrl}
+              alt="Portada"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+              Portada no configurada
+            </div>
+          )}
+
+          {/* Input portada */}
+          <label className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer shadow">
+            Cambiar portada
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  subirPortada(e.target.files[0]);
+                }
+              }}
+            />
+          </label>
+
+          {/* Logo */}
+          <div className="absolute -bottom-10 left-6">
+            <div className="w-24 h-24 rounded-full bg-white shadow-md overflow-hidden flex items-center justify-center">
+              {negocio.logoUrl ? (
+                <img
+                  src={negocio.logoUrl}
+                  alt="Logo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs text-gray-400">Sin logo</span>
+              )}
+            </div>
+
+            {/* Input logo */}
+            <label className="block text-xs text-center mt-2 text-[#0f6f63] font-medium cursor-pointer">
+              Cambiar logo
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    subirLogo(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Espacio para que no pise el logo */}
+        <div className="h-14" />
+      </section>
+
+      {/* ================= GALERÍA ================= */}
+      <section className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900">
+            Galería del negocio
+          </h2>
+
+          <label className="text-sm font-medium text-[#0f6f63] cursor-pointer">
+            Añadir imágenes
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (!e.target.files) return;
+                Array.from(e.target.files).forEach(subirImagenGaleria);
+              }}
+            />
+          </label>
+        </div>
+
+        {(!negocio.galeriaUrls || negocio.galeriaUrls.length === 0) && (
+          <p className="text-sm text-gray-500">
+            Aún no has subido imágenes a la galería
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {negocio.galeriaUrls?.map((url) => (
+            <div
+              key={url}
+              className="h-28 rounded-xl overflow-hidden bg-gray-200"
+            >
+              <img
+                src={url}
+                alt="Galería"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* SERVICIOS */}
       <section className="bg-white p-6 rounded-lg shadow-sm">
@@ -334,6 +543,7 @@ const EM0003_Perfil = () => {
       />
     </div>
   );
+  //endregion
 };
 
 export default EM0003_Perfil;
