@@ -104,118 +104,104 @@ const Registro = () => {
   //  UI
   // ------------------------------
   return (
-    <div className="min-h-screen flex items-center justify-center login-wrapper px-4">
-      <div className="login-card bg-white shadow-xl rounded-2xl p-8 md:p-10">
-        {/* Logo */}
-        <div className="flex justify-center mb-3">
+    <div className="h-screen flex items-center justify-center bg-linear-to-b from-white to-[#1f2a44]/4 px-4">
+      <div
+        className="
+        w-full max-w-sm bg-white rounded-3xl px-6 py-7
+        shadow-[0_20px_60px_-20px_rgba(31,42,68,0.25)]
+        ring-1 ring-[#1f2a44]/5
+      "
+      >
+        {/* LOGO */}
+        <div className="flex justify-center mb-4">
           <img src="../logo.png" alt="Reservo logo" className="h-50 w-auto" />
         </div>
 
-        <h2 className="text-xl font-semibold text-center text-gray-700 mb-4">
-          Crear cuenta de cliente
+        {/* TITLE */}
+        <h2 className="text-center text-sm font-medium text-gray-500 mb-5">
+          Crear cuenta
         </h2>
 
-        <form onSubmit={handleRegistro} className="space-y-6">
-          {/* Nombre */}
-          <div>
-            <label className="block text-gray-600 mb-1">Nombre completo</label>
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2 input-box">
-              <Icons.user size={20} className="text-gray-500" />
-              <input
-                type="text"
-                placeholder="Juan Pérez"
-                className="flex-1 bg-transparent outline-none"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                required
-              />
-            </div>
+        {/* FORM */}
+        <form onSubmit={handleRegistro} className="space-y-4">
+          {/* NOMBRE */}
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gray-50 border border-gray-200 focus-within:border-[#1f2a44] transition">
+            <Icons.user size={20} className="text-gray-400" />
+            <input
+              type="text"
+              placeholder="Nombre completo"
+              className="flex-1 bg-transparent outline-none text-sm"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+            />
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-gray-600 mb-1">Email</label>
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2 input-box">
-              <Icons.mail size={20} className="text-gray-500" />
-              <input
-                type="email"
-                placeholder="ejemplo@correo.com"
-                className="flex-1 bg-transparent outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+          {/* EMAIL */}
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gray-50 border border-gray-200 focus-within:border-[#1f2a44] transition">
+            <Icons.mail size={20} className="text-gray-400" />
+            <input
+              type="email"
+              placeholder="Email"
+              className="flex-1 bg-transparent outline-none text-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
-          {/* Contraseña */}
-          <div>
-            <label className="block text-gray-600 mb-1">Contraseña</label>
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2 input-box">
-              <Icons.lock size={20} className="text-gray-500" />
-
-              <input
-                type={mostrarPassword ? "text" : "password"}
-                placeholder="•••••••••"
-                className="flex-1 bg-transparent outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-
-              <button
-                type="button"
-                onClick={() => setMostrarPassword((prev) => !prev)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                {mostrarPassword ? (
-                  <Icons.eyeClosed size={20} />
-                ) : (
-                  <Icons.eye size={20} />
-                )}
-              </button>
-            </div>
+          {/* PASSWORD */}
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gray-50 border border-gray-200 focus-within:border-[#1f2a44] transition">
+            <Icons.lock size={20} className="text-gray-400" />
+            <input
+              type={mostrarPassword ? "text" : "password"}
+              placeholder="Contraseña"
+              className="flex-1 bg-transparent outline-none text-sm"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarPassword(!mostrarPassword)}
+              className="text-gray-400 hover:text-gray-600 transition"
+            >
+              {mostrarPassword ? (
+                <Icons.eyeClosed size={18} />
+              ) : (
+                <Icons.eye size={18} />
+              )}
+            </button>
           </div>
 
-          {/* Error */}
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {/* ERROR */}
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
-          {/* Éxito */}
+          {/* SUCCESS */}
           {success && (
-            <p className="text-green-600 text-sm text-center font-semibold">
+            <p className="text-sm text-green-600 text-center font-medium">
               {success}
             </p>
           )}
 
-          {/* Botón */}
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
-            className="
-              w-full text-white py-3 rounded-lg 
-              flex items-center justify-center gap-2 
-              font-semibold login-btn
-            "
+            className="w-full py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 login-btn"
           >
             {loading ? (
               <Icons.spinner size={20} className="animate-spin" />
             ) : (
               <>
-                <Icons.check size={20} />
+                <Icons.check size={18} />
                 Crear cuenta
               </>
             )}
           </button>
         </form>
 
-        {/* Link Login */}
-        <p className="text-center text-gray-600 mt-6">
-          ¿Ya tienes una cuenta?{" "}
-          <a
-            href="/login"
-            className="font-semibold"
-            style={{ color: "#0f6f63" }}
-          >
+        {/* LOGIN LINK */}
+        <p className="text-center text-sm text-gray-500 mt-5">
+          ¿Ya tienes cuenta?{" "}
+          <a href="/login" className="font-semibold text-[#1f2a44]">
             Iniciar sesión
           </a>
         </p>

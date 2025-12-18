@@ -110,29 +110,48 @@ const EM0003_Horarios = ({ horariosIniciales, onGuardar }: Props) => {
     });
   };
 
+  // horas
+  const generarHoras = () => {
+    const horas: string[] = [];
+    for (let h = 6; h <= 22; h++) {
+      for (const m of [0, 15, 30, 45]) {
+        horas.push(
+          `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+        );
+      }
+    }
+    return horas;
+  };
+
+  const horasDisponibles = generarHoras();
+  const [selectorAbierto, setSelectorAbierto] = useState<{
+    dia: string;
+    tipo: "inicio" | "fin";
+  } | null>(null);
+
   /* =========================
      RENDER
   ========================== */
   return (
-    <section className="bg-white p-6 rounded-lg shadow-sm">
-      {/* CABECERA */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium">Horarios</h2>
+    <section className="bg-white rounded-2xl shadow-sm p-8 flex flex-col">
+      {/* ================= CABECERA ================= */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-900">Horarios</h2>
 
         {!enEdicion && (
           <button
             onClick={() =>
               setHorariosEditando(structuredClone(horariosActuales))
             }
-            className="text-[#0f6f63]"
+            className="text-gray-400 hover:text-[#1F2A44] transition"
           >
             <Icons.edit size={18} />
           </button>
         )}
       </div>
 
-      {/* LISTADO */}
-      <div className="space-y-4">
+      {/* ================= LISTADO ================= */}
+      <div className="space-y-3">
         {diasSemana.map(({ key, label }) => {
           const dia = horarios[key];
           const tramo = dia.tramos[0];
@@ -140,49 +159,123 @@ const EM0003_Horarios = ({ horariosIniciales, onGuardar }: Props) => {
           return (
             <div
               key={key}
-              className="flex items-center gap-4 border rounded p-3"
+              className="relative flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
             >
-              <div className="w-32 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={dia.activo}
+              {/* DÍA */}
+              <div className="flex items-center gap-3 min-w-[140px]">
+                <button
                   disabled={!enEdicion}
-                  onChange={() => toggleDiaActivo(key)}
-                />
-                <span>{label}</span>
+                  onClick={() => toggleDiaActivo(key)}
+                  className={`w-5 h-5 rounded-md flex items-center justify-center border transition
+                  ${
+                    dia.activo
+                      ? "bg-[#1F2A44]/80 border-[#1F2A44]"
+                      : "bg-white border-gray-300"
+                  }
+                `}
+                >
+                  {dia.activo && (
+                    <Icons.check size={14} className="text-white" />
+                  )}
+                </button>
+
+                <span className="text-sm font-medium text-gray-900">
+                  {label}
+                </span>
               </div>
 
+              {/* HORAS */}
               {dia.activo && tramo ? (
-                <>
-                  <input
-                    type="time"
-                    value={tramo.inicio}
-                    disabled={!enEdicion}
-                    onChange={(e) => cambiarHora(key, "inicio", e.target.value)}
-                    className="border rounded px-2 py-1"
-                  />
+                <div className="flex items-center gap-3">
+                  {/* INICIO */}
+                  <div className="relative">
+                    <button
+                      disabled={!enEdicion}
+                      onClick={() =>
+                        setSelectorAbierto(
+                          selectorAbierto?.dia === key &&
+                            selectorAbierto.tipo === "inicio"
+                            ? null
+                            : { dia: key, tipo: "inicio" }
+                        )
+                      }
+                      className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                    >
+                      {tramo.inicio}
+                      <Icons.clock size={14} className="text-gray-400" />
+                    </button>
 
-                  <span>—</span>
+                    {selectorAbierto?.dia === key &&
+                      selectorAbierto.tipo === "inicio" && (
+                        <div className="absolute z-50 mt-2 w-28 rounded-xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+                          {horasDisponibles.map((hora) => (
+                            <button
+                              key={hora}
+                              onClick={() => {
+                                cambiarHora(key, "inicio", hora);
+                                setSelectorAbierto(null);
+                              }}
+                              className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
+                            >
+                              {hora}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
 
-                  <input
-                    type="time"
-                    value={tramo.fin}
-                    disabled={!enEdicion}
-                    onChange={(e) => cambiarHora(key, "fin", e.target.value)}
-                    className="border rounded px-2 py-1"
-                  />
-                </>
+                  <span className="text-gray-400">—</span>
+
+                  {/* FIN */}
+                  <div className="relative">
+                    <button
+                      disabled={!enEdicion}
+                      onClick={() =>
+                        setSelectorAbierto(
+                          selectorAbierto?.dia === key &&
+                            selectorAbierto.tipo === "fin"
+                            ? null
+                            : { dia: key, tipo: "fin" }
+                        )
+                      }
+                      className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                    >
+                      {tramo.fin}
+                      <Icons.clock size={14} className="text-gray-400" />
+                    </button>
+
+                    {selectorAbierto?.dia === key &&
+                      selectorAbierto.tipo === "fin" && (
+                        <div className="absolute z-50 mt-2 w-28 rounded-xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+                          {horasDisponibles.map((hora) => (
+                            <button
+                              key={hora}
+                              onClick={() => {
+                                cambiarHora(key, "fin", hora);
+                                setSelectorAbierto(null);
+                              }}
+                              className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
+                            >
+                              {hora}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                </div>
               ) : (
-                <span className="text-gray-400 text-sm">Cerrado</span>
+                <span className="text-xs font-medium text-gray-400 bg-white border border-gray-200 rounded-lg px-3 py-1.5">
+                  Cerrado
+                </span>
               )}
             </div>
           );
         })}
       </div>
 
-      {/* ACCIONES */}
+      {/* ================= ACCIONES ================= */}
       {enEdicion && (
-        <div className="flex gap-2 mt-6">
+        <div className="flex gap-3 mt-8">
           <button
             onClick={() => {
               if (!horariosEditando) return;
@@ -190,15 +283,19 @@ const EM0003_Horarios = ({ horariosIniciales, onGuardar }: Props) => {
               onGuardar(horariosEditando);
               setHorariosActuales(horariosEditando);
               setHorariosEditando(null);
+              setSelectorAbierto(null);
             }}
-            className="px-4 py-2 rounded bg-[#0f6f63] text-white text-sm"
+            className="bg-[#1F2A44]/90 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition"
           >
             Guardar horarios
           </button>
 
           <button
-            onClick={() => setHorariosEditando(null)}
-            className="px-4 py-2 rounded border text-sm"
+            onClick={() => {
+              setHorariosEditando(null);
+              setSelectorAbierto(null);
+            }}
+            className="px-5 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-50 transition"
           >
             Cancelar
           </button>

@@ -103,110 +103,97 @@ const Login = () => {
 
   // region Renderizado
   return (
-    <div className="min-h-screen flex items-center justify-center login-wrapper px-10">
-      <div className="login-card bg-white shadow-xl rounded-2xl p-8 md:p-10">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
+    <div className="h-screen flex items-center justify-center bg-linear-to-b from-white to-[#1f2a44]/4 px-4">
+      <div
+        className="
+    w-full max-w-sm bg-white rounded-3xl px-6 py-7
+    shadow-[0_20px_60px_-20px_rgba(31,42,68,0.25)]
+    ring-1 ring-[#1f2a44]/5
+  "
+      >
+        {/* LOGO */}
+        <div className="flex justify-center mb-6">
           <img src="../logo.png" alt="Reservo logo" className="h-50 w-auto" />
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          {/* Email */}
-          <div>
-            <label className="block text-gray-600 mb-1">Email</label>
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2 input-box">
-              <Icons.mail size={20} className="text-gray-500" />
-              <input
-                type="email"
-                className="flex-1 bg-transparent outline-none"
-                placeholder="ejemplo@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+        {/* FORM */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* EMAIL */}
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gray-50 border border-gray-200 focus-within:border-[#1f2a44] transition">
+            <Icons.mail size={20} className="text-gray-400" />
+            <input
+              type="email"
+              placeholder="Email"
+              className="flex-1 bg-transparent outline-none text-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
-          {/* Contraseña */}
-          <div>
-            <label className="block text-gray-600 mb-1">Contraseña</label>
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2 input-box">
-              <Icons.lock size={20} className="text-gray-500" />
-
-              <input
-                type={mostrarPassword ? "text" : "password"}
-                className="flex-1 bg-transparent outline-none"
-                placeholder="•••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-
-              {/* Botón mostrar/ocultar */}
-              <button
-                type="button"
-                onClick={() => setMostrarPassword(!mostrarPassword)}
-                className="text-gray-500 hover:text-gray-700 transition"
-              >
-                {mostrarPassword ? (
-                  <Icons.eyeClosed size={20} />
-                ) : (
-                  <Icons.eye size={20} />
-                )}
-              </button>
-            </div>
+          {/* PASSWORD */}
+          <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gray-50 border border-gray-200 focus-within:border-[#1f2a44] transition">
+            <Icons.lock size={20} className="text-gray-400" />
+            <input
+              type={mostrarPassword ? "text" : "password"}
+              placeholder="Contraseña"
+              className="flex-1 bg-transparent outline-none text-sm"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarPassword(!mostrarPassword)}
+              className="text-gray-400 hover:text-gray-600 transition"
+            >
+              {mostrarPassword ? (
+                <Icons.eyeClosed size={18} />
+              ) : (
+                <Icons.eye size={18} />
+              )}
+            </button>
           </div>
 
-          {/* Error */}
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {/* ERROR */}
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
-          {/* Botón LOGIN */}
+          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={localLoading || loading}
-            className="
-              w-full text-white py-3 rounded-lg 
-              flex items-center justify-center gap-2 
-              font-semibold login-btn
-            "
+            className="w-full py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 login-btn"
           >
             {localLoading ? (
               <Icons.spinner size={20} className="animate-spin" />
             ) : (
               <>
-                <Icons.login size={20} />
-                Iniciar Sesión
+                <Icons.login size={18} />
+                Iniciar sesión
               </>
             )}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center my-6">
-          <div className="flex-1 h-px bg-gray-300"></div>
-          <span className="px-3 text-gray-500 text-sm">o continuar con</span>
-          <div className="flex-1 h-px bg-gray-300"></div>
+        {/* DIVIDER */}
+        <div className="flex items-center my-5">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="px-3 text-xs text-gray-400">o</span>
+          <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* Google */}
+        {/* GOOGLE */}
         <button
           onClick={handleGoogleLogin}
           disabled={localLoading}
-          className="
-            w-full py-3 rounded-lg 
-            flex items-center justify-center gap-3 
-            google-btn
-          "
+          className="w-full py-3 rounded-xl border border-gray-200 flex items-center justify-center gap-3 text-gray-600 hover:bg-gray-50 transition"
         >
-          <img src="../google.png" alt="Google" className="h-8" />
+          <img src="../google.png" alt="Google" className="h-5" />
+          Continuar con Google
         </button>
 
-        {/* Link Registro */}
-        <p className="text-center text-gray-600 mt-6">
-          ¿No tienes una cuenta?{" "}
-          <a
-            href="/registro"
-            className="font-semibold"
-            style={{ color: "#0f6f63" }}
-          >
+        {/* REGISTER */}
+        <p className="text-center text-sm text-gray-500 mt-5">
+          ¿No tienes cuenta?{" "}
+          <a href="/registro" className="font-semibold text-[#1f2a44]">
             Crear cuenta
           </a>
         </p>
