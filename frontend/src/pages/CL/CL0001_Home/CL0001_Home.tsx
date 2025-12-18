@@ -83,7 +83,7 @@ const CL0001_Home = () => {
 
   //region renderizado
   return (
-    <div className="flex flex-col gap-9">
+    <div className="flex flex-col gap-6">
       {/* ================= BUSCADOR ================= */}
       <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
         <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ const CL0001_Home = () => {
       </section>
       {/* ================= SEPARADOR ================= */}
       <div className="px-2">
-        <div className="h-px bg-linear-to-r from-transparent via-gray-300/60 to-transparent" />
+        <div className="h-px bg-linear-to-r from-transparent via-gray-300/70 to-transparent" />
       </div>
       {/* ================= RESERVA ACTIVA ================= */}
       {!loadingActiva && reservaActiva && negocioReserva && (
