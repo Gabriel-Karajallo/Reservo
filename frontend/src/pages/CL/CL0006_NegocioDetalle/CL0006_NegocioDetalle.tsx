@@ -90,7 +90,7 @@ const CL0006_NegocioDetalle = () => {
             onClick={() => navigate(-1)}
             className="absolute top-4 left-4 z-50 bg-white/90 backdrop-blur rounded-full p-2 shadow"
           >
-            <Icons.squareArrowLeft size={20} className="text-gray-800" />
+            <Icons.arrowLeft size={20} className="text-gray-800" />
           </button>
 
           {/* Favorito */}

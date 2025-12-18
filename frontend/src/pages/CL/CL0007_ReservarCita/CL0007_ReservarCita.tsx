@@ -1,4 +1,3 @@
-import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import { useNegocio } from "../../../hooks/useNegocio";
@@ -18,6 +17,7 @@ import {
 import { db } from "../../../services/firebase/firebaseConfig";
 import { auth } from "../../../services/firebase/firebaseConfig";
 import type { Reserva } from "../../../types/firebase";
+import { Icons } from "../../../assets/icons";
 
 /* =====================
    HELPERS
@@ -340,42 +340,59 @@ const CL0007_ReservarCita = () => {
     navigate("/cliente");
   };
 
-  /* =====================
-     RENDER
-  ===================== */
+  // region renderizado
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6 pb-24">
+      {/* ================= HEADER ================= */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-full bg-gray-100"
+          className="p-2 rounded-full bg-[#1F2A44]/10 text-[#1F2A44] active:scale-95 transition"
         >
-          <ArrowLeft size={20} />
+          <Icons.arrowLeft size={20} strokeWidth={2.2} />
         </button>
+
         <h1 className="text-lg font-semibold">
-          {esCambioHora ? "Cambiar hora de tu cita" : "Reserva una cita"}
+          {esCambioHora ? "Cambiar tu cita" : "Reserva una cita"}
         </h1>
       </div>
 
-      <div className="bg-white border rounded-xl p-4 text-sm">
-        <p>
-          <strong>Negocio:</strong> {negocio?.nombre ?? "Cargando..."}
-        </p>
-        <p>
-          <strong>Servicio:</strong>{" "}
-          {servicioSeleccionado?.nombre ?? "Cargando..."}
-        </p>
-      </div>
+      {/* ================= EMPLEADOS ================= */}
+      <section>
+        <p className="text-sm font-medium mb-3">Profesional</p>
 
-      {/* Calendario */}
-      <div className="bg-white border rounded-xl p-4">
-        <div className="flex justify-between mb-4">
+        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1">
+          {/* Cualquiera */}
+          <button className="flex flex-col items-center min-w-[72px] gap-2">
+            <div className="w-14 h-14 rounded-full border-2 border-[#0f6f63] flex items-center justify-center text-[#0f6f63] bg-[#0f6f63]/10">
+              👥
+            </div>
+            <span className="text-xs font-medium">Cualquiera</span>
+          </button>
+
+          {/* Empleados futuros */}
+          <button className="flex flex-col items-center min-w-[72px] gap-2 opacity-40">
+            <div className="w-14 h-14 rounded-full bg-gray-200" />
+            <span className="text-xs">Héctor</span>
+          </button>
+
+          <button className="flex flex-col items-center min-w-[72px] gap-2 opacity-40">
+            <div className="w-14 h-14 rounded-full bg-gray-200" />
+            <span className="text-xs">Cristian</span>
+          </button>
+        </div>
+      </section>
+
+      {/* ================= CALENDARIO ================= */}
+      <section className="bg-white rounded-2xl p-4">
+        <div className="flex justify-between items-center mb-4">
           <button
             onClick={() =>
               setMesActual(
                 new Date(mesActual.getFullYear(), mesActual.getMonth() - 1, 1)
               )
             }
+            className="text-lg px-2"
           >
             ‹
           </button>
@@ -393,12 +410,13 @@ const CL0007_ReservarCita = () => {
                 new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 1)
               )
             }
+            className="text-lg px-2"
           >
             ›
           </button>
         </div>
 
-        <div className="grid grid-cols-7 text-xs text-gray-400 text-center mb-2">
+        <div className="grid grid-cols-7 text-[11px] text-gray-400 text-center mb-2">
           {["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"].map((d) => (
             <span key={d}>{d}</span>
           ))}
@@ -414,14 +432,14 @@ const CL0007_ReservarCita = () => {
                   setFechaSeleccionada(dia);
                   setHoraSeleccionada(null);
                 }}
-                className={`h-9 rounded-full text-sm
-                  ${
-                    esDiaPasado(dia) || esDomingo(dia)
-                      ? "text-gray-300"
-                      : fechaSeleccionada.toDateString() === dia.toDateString()
-                      ? "bg-[#0f6f63] text-white"
-                      : "hover:bg-gray-100"
-                  }`}
+                className={`h-9 rounded-full text-sm transition
+                ${
+                  esDiaPasado(dia) || esDomingo(dia)
+                    ? "text-gray-300"
+                    : fechaSeleccionada.toDateString() === dia.toDateString()
+                    ? "bg-[#1F2A44]/20"
+                    : "hover:bg-gray-100"
+                }`}
               >
                 {dia.getDate()}
               </button>
@@ -430,65 +448,66 @@ const CL0007_ReservarCita = () => {
             )
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Horas */}
-      <div className="bg-white border rounded-xl p-4">
-        <p className="text-sm font-medium mb-3">Horas disponibles</p>
+      {/* ================= HORAS ================= */}
+      <section>
+        <p className="text-sm font-medium mb-3">Hora</p>
 
         {horasDisponibles.length === 0 ? (
           <p className="text-sm text-gray-400">
             No hay horas disponibles este día
           </p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto no-scrollbar">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-1">
             {horasDisponibles.map((hora) => (
               <button
                 key={hora}
                 onClick={() => setHoraSeleccionada(hora)}
-                className={`min-w-[90px] py-3 rounded-full border text-sm
-                  ${
-                    horaSeleccionada === hora
-                      ? "bg-[#0f6f63] text-white border-[#0f6f63]"
-                      : "border-gray-200"
-                  }`}
+                className={`min-w-[96px] py-3 rounded-full text-sm font-medium transition
+                ${
+                  horaSeleccionada === hora
+                    ? "bg-[#1F2A44]/10"
+                    : "bg-white border border-gray-200"
+                }`}
               >
                 {hora}
               </button>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Resumen */}
-      <div className="bg-white border rounded-xl p-4">
-        <div className="flex justify-between">
-          <div>
+      {/* ================= RESUMEN ================= */}
+      <section className="bg-gray-50 rounded-2xl p-4">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
             <p className="font-medium">
               {servicioSeleccionado?.nombre ?? "Servicio"}
             </p>
             <p className="text-sm text-gray-500">
-              {horaSeleccionada ?? "--:--"} ·{" "}
-              {servicioSeleccionado?.duracion ?? "--"} min
+              {fechaSeleccionada.toLocaleDateString("es-ES")} ·{" "}
+              {horaSeleccionada ?? "--:--"}
             </p>
             <p className="text-sm text-gray-500">
-              {fechaSeleccionada.toLocaleDateString("es-ES")}
+              {servicioSeleccionado?.duracion ?? "--"} min
             </p>
           </div>
 
-          <p className="font-semibold">
+          <p className="text-lg font-semibold">
             {servicioSeleccionado
               ? `${servicioSeleccionado.precio.toFixed(2)} €`
               : "-- €"}
           </p>
         </div>
-      </div>
+      </section>
 
+      {/* ================= CTA ================= */}
       <button
         disabled={!horaSeleccionada}
         onClick={confirmarReserva}
-        className={`py-3 rounded-xl text-white font-medium
-        ${horaSeleccionada ? "bg-green-700" : "bg-green-700 opacity-40"}`}
+        className={`w-full py-4 rounded-2xl text-white font-semibold shadow-md transition
+      ${horaSeleccionada ? "bg-[#1F2A44]" : "bg-[#1F2A44] opacity-40"}`}
       >
         {esCambioHora ? "Confirmar cambio" : "Confirmar reserva"}
       </button>
