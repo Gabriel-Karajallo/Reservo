@@ -152,7 +152,7 @@ const CL0001_Home = () => {
       </section>
       {/* ================= SEPARADOR ================= */}
       <div className="px-2">
-        <div className="h-px bg-gradient-to-r from-transparent via-gray-300/60 to-transparent" />
+        <div className="h-px bg-linear-to-r from-transparent via-gray-300/60 to-transparent" />
       </div>
       {/* ================= RESERVA ACTIVA ================= */}
       {!loadingActiva && reservaActiva && negocioReserva && (
