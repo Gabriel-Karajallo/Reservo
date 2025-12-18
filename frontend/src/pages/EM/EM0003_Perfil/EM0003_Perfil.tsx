@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../../../services/firebase/firebaseConfig";
 import EM0003_Horarios from "./EM0003_Horarios";
+import { redimensionarImagen } from "./EM0003_Imagenes";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import ImagenGaleria from "./imagenesGaleria";
 import {
   collection,
   query,
@@ -52,14 +54,20 @@ const EM0003_Perfil = () => {
   };
 
   /* =========================
-     SUBIR LOGO
-  ========================== */
+   SUBIR LOGO
+========================== */
   const subirLogo = async (file: File) => {
     if (!negocio) return;
 
     setSubiendoImagen(true);
 
-    const url = await subirImagen(file, `negocios/${negocio.id}/logo.jpg`);
+    // 🔧 OPTIMIZACIÓN
+    const imagenOptimizada = await redimensionarImagen(file, 300, 300);
+
+    const url = await subirImagen(
+      imagenOptimizada,
+      `negocios/${negocio.id}/logo.jpg`
+    );
 
     await updateDoc(doc(db, "negocios", negocio.id), {
       logoUrl: url,
@@ -74,14 +82,20 @@ const EM0003_Perfil = () => {
   };
 
   /* =========================
-     SUBIR PORTADA
-  ========================== */
+   SUBIR PORTADA
+========================== */
   const subirPortada = async (file: File) => {
     if (!negocio) return;
 
     setSubiendoImagen(true);
 
-    const url = await subirImagen(file, `negocios/${negocio.id}/portada.jpg`);
+    // 🔧 OPTIMIZACIÓN
+    const imagenOptimizada = await redimensionarImagen(file, 1600, 900);
+
+    const url = await subirImagen(
+      imagenOptimizada,
+      `negocios/${negocio.id}/portada.jpg`
+    );
 
     await updateDoc(doc(db, "negocios", negocio.id), {
       portadaUrl: url,
@@ -101,12 +115,11 @@ const EM0003_Perfil = () => {
   const subirImagenGaleria = async (file: File) => {
     if (!negocio) return;
 
-    setSubiendoImagen(true);
+    const imagenOptimizada = await redimensionarImagen(file, 1200, 1200);
 
     const nombre = crypto.randomUUID();
-
     const url = await subirImagen(
-      file,
+      imagenOptimizada,
       `negocios/${negocio.id}/galeria/${nombre}.jpg`
     );
 
@@ -116,12 +129,7 @@ const EM0003_Perfil = () => {
       galeriaUrls: nuevasUrls,
     });
 
-    setNegocio({
-      ...negocio,
-      galeriaUrls: nuevasUrls,
-    });
-
-    setSubiendoImagen(false);
+    setNegocio({ ...negocio, galeriaUrls: nuevasUrls });
   };
 
   /* =========================
@@ -305,8 +313,9 @@ const EM0003_Perfil = () => {
               {negocio.logoUrl ? (
                 <img
                   src={negocio.logoUrl}
+                  loading="lazy"
                   alt="Logo"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover bg-gray-200"
                 />
               ) : (
                 <span className="text-xs text-gray-400">Sin logo</span>
@@ -364,16 +373,7 @@ const EM0003_Perfil = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {negocio.galeriaUrls?.map((url) => (
-            <div
-              key={url}
-              className="h-28 rounded-xl overflow-hidden bg-gray-200"
-            >
-              <img
-                src={url}
-                alt="Galería"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <ImagenGaleria key={url} url={url} />
           ))}
         </div>
       </section>
