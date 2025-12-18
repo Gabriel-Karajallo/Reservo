@@ -20,7 +20,6 @@ export default defineConfig({
         background_color: '#1F2A44',
 
         icons: [
-          // ICONO APP → SOLO LA R
           {
             src: '/icons/icon-192.png',
             sizes: '192x192',
@@ -32,13 +31,6 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
-          },
-
-          // ICONO USADO PARA SPLASH → TEXTO "RESERVO"
-          {
-            src: '/icons/splash-icon.png',
-            sizes: '512x512',
-            type: 'image/png'
           }
         ]
       }
