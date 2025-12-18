@@ -28,7 +28,7 @@ import EM0003_Perfil from "../pages/EM/EM0003_Perfil/EM0003_Perfil";
 // Admin
 import AD0001_Panel from "../pages/AD/AD0001_Panel/AD0001_Panel";
 import CL0005_NegociosCategoria from "../pages/CL/CL0005_NegociosCategoria/CL0005_NegociosCategoria";
-import CL0006_NegocioDetalle from "../pages/CL/CL0006_NegocioDetalle/useUltimaReservaNegocio";
+import CL0006_NegocioDetalle from "../pages/CL/CL0006_NegocioDetalle/CL0006_NegocioDetalle";
 import CL0011_ConfiguracionGeneral from "../pages/CL/CL0011_ConfiguracionGeneral/CL0011_ConfiguracionGeneral";
 import CL0012_Soporte from "../pages/CL/CL0012_Soporte/CL0012_Soporte";
 const AppRouter = () => {
