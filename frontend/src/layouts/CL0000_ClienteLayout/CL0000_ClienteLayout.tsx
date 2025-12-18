@@ -5,7 +5,7 @@ const CL0000_ClienteLayout = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Barra superior */}
-      <header className="w-full h-14 bg-[#1F2A44] flex items-center justify-center">
+      <header className="w-full h-14  bg-[#1F2A44] flex items-center justify-center">
         <img src="/titulo.png" alt="Reservo" className="h-6 opacity-90" />
       </header>
 
