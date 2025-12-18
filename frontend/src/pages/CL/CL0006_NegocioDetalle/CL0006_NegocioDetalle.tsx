@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useNegocio } from "../../../hooks/useNegocio";
 import { useServiciosPorNegocio } from "../../../hooks/useServiciosPorNegocio";
-import { useUltimaReservaNegocio } from "./CL0006_NegocioDetalle";
+import { useUltimaReservaNegocio } from "./useUltimaReservaNegocio";
 import type { Servicio } from "../../../types/firebase";
 import { Icons } from "../../../assets/icons";
 
