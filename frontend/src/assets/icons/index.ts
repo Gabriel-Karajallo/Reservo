@@ -23,7 +23,8 @@ import {
   Edit,
   Trash ,
   SquareArrowLeft,
-  Heart 
+  Heart,
+  ArrowLeft 
 } from "lucide-react";
 
 export const Icons = {
@@ -44,10 +45,11 @@ export const Icons = {
   check: Check,
   close: X,
   spinner: Loader2,
-  eye: Eye,
+  eye: Eye, 
   eyeClosed: EyeClosed,
   edit: Edit,
   trash: Trash,
   squareArrowLeft: SquareArrowLeft,
-  heart: Heart
+  heart: Heart,
+  arrowLeft: ArrowLeft
 };
