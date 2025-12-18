@@ -30,7 +30,7 @@ const CL0005_NegociosCategoria = () => {
             className="flex gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer active:scale-[0.98] transition"
           >
             {/* IMAGEN */}
-            <div className="w-28 h-28 bg-gray-100 flex-shrink-0">
+            <div className="w-28 h-28 bg-gray-100 shrink-0">
               <img
                 src={negocio.portadaUrl || "/placeholder-negocio.jpg"}
                 alt={negocio.nombre}
