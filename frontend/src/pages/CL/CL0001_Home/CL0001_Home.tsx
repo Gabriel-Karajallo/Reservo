@@ -117,7 +117,11 @@ const CL0001_Home = () => {
             categoriasLoop.map((c: Categoria, index: number) => (
               <button
                 key={`${c.id}-${index}`}
-                onClick={() => navigate(`/cliente/categoria/${c.id}`)}
+                onClick={() =>
+                  navigate(`/cliente/categoria/${c.id}`, {
+                    state: { nombreCategoria: c.nombre },
+                  })
+                }
                 className="flex flex-col items-center min-w-[72px] transition active:scale-95"
               >
                 {/* Imagen circular */}

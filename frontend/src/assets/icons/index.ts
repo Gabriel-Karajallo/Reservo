@@ -21,7 +21,9 @@ import {
   Eye,
   EyeClosed,
   Edit,
-  Trash  
+  Trash ,
+  SquareArrowLeft,
+  Heart 
 } from "lucide-react";
 
 export const Icons = {
@@ -45,5 +47,7 @@ export const Icons = {
   eye: Eye,
   eyeClosed: EyeClosed,
   edit: Edit,
-  trash: Trash
+  trash: Trash,
+  squareArrowLeft: SquareArrowLeft,
+  heart: Heart
 };
