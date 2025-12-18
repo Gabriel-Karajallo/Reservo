@@ -83,7 +83,7 @@ const CL0001_Home = () => {
 
   //region renderizado
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-9">
       {/* ================= BUSCADOR ================= */}
       <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
         <div className="flex items-center gap-3">
@@ -95,7 +95,6 @@ const CL0001_Home = () => {
           />
         </div>
       </div>
-
       {/* ================= CATEGORÍAS ================= */}
       <section className="space-y-4">
         <h2 className="text-sm font-bold tracking-tight text-gray-900">
@@ -104,7 +103,11 @@ const CL0001_Home = () => {
 
         <div
           ref={scrollRef}
-          className="flex gap-5 overflow-x-auto no-scrollbar px-3 pb-1"
+          className="
+    flex gap-5 overflow-x-auto no-scrollbar
+    px-4 pb-1
+    -mx-4
+  "
         >
           {loadingCategorias && (
             <span className="text-gray-400 text-sm">Cargando categorías…</span>
@@ -142,53 +145,59 @@ const CL0001_Home = () => {
               </button>
             ))}
         </div>
-
-        {/* Separador suave */}
-        <div className="h-px bg-gray-100" />
       </section>
-
+      {/* ================= SEPARADOR ================= */}
+      <div className="px-2">
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-300/60 to-transparent" />
+      </div>
       {/* ================= RESERVA ACTIVA ================= */}
       {!loadingActiva && reservaActiva && negocioReserva && (
         <section className="space-y-3">
           <p className="text-sm font-semibold text-gray-700">Tu próxima cita</p>
 
-          {/* Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="relative rounded-2xl overflow-hidden shadow-sm">
             {/* Imagen */}
-            <div className="h-36 bg-gray-200">
-              <img
-                src={negocioReserva.portadaUrl ?? "/placeholder-negocio.jpg"}
-                alt={negocioReserva.nombre}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <img
+              src={negocioReserva.portadaUrl ?? "/placeholder-negocio.jpg"}
+              alt={negocioReserva.nombre}
+              className="w-full h-56 sm:h-64 object-cover"
+            />
+
+            {/* Overlay de seguridad */}
+            <div
+              className="
+                absolute inset-0
+                bg-black/35
+                backdrop-blur-[1px]
+              "
+            />
 
             {/* Contenido */}
-            <div className="p-5 space-y-2">
-              <p className="text-lg font-bold tracking-tight text-gray-900">
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-white space-y-1">
+              <p className="text-base font-semibold drop-shadow-sm">
                 {reservaActiva.nombreServicio}
               </p>
 
-              <p className="text-sm text-gray-500">
-                con <span className="font-medium">Profesional asignado</span>
+              <p className="text-xs text-white/90 drop-shadow-sm">
+                con Profesional asignado
               </p>
 
-              <p className="text-sm text-gray-600">
+              <p className="text-xs text-white/90 drop-shadow-sm">
                 {formatearFechaHora(reservaActiva)}
               </p>
 
               {/* Acciones */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 pt-3">
                 <button
                   onClick={() =>
                     navigate(`/cliente/cambiar-hora/${reservaActiva.id}`)
                   }
                   className="
-  flex-1 h-11 rounded-xl
-  bg-[#1f2f4d] text-white
-  text-sm font-semibold tracking-wide
-  transition active:scale-95
-"
+                flex-1 h-9 rounded-xl
+                bg-white text-[#1f2f4d]
+                text-sm font-medium
+                active:scale-95 transition
+              "
                 >
                   Cambiar
                 </button>
@@ -196,11 +205,12 @@ const CL0001_Home = () => {
                 <button
                   onClick={() => cancelarReserva(reservaActiva)}
                   className="
-  flex-1 h-11 rounded-xl
-  bg-red-50 text-red-600
-  text-sm font-semibold
-  transition active:scale-95
-"
+                flex-1 h-9 rounded-xl
+                bg-white/20 text-white
+                text-sm font-medium
+                border border-white/30
+                active:scale-95 transition
+              "
                 >
                   Cancelar
                 </button>
@@ -208,16 +218,15 @@ const CL0001_Home = () => {
             </div>
           </div>
 
-          {/* Negocio + dirección */}
-          <div className=" border-t border-gray-100 px-1">
-            <p className="text-sm font-bold tracking-wide text-gray-900 uppercase">
+          {/* Negocio */}
+          <div className="px-1">
+            <p className="text-sm font-semibold text-gray-800">
               {negocioReserva.nombre}
             </p>
             <p className="text-xs text-gray-500">{negocioReserva.direccion}</p>
           </div>
         </section>
       )}
-
       {/* ================= ÚLTIMA RESERVA ================= */}
       {!loadingUltima && !reservaActiva && ultimaReserva && (
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
@@ -256,12 +265,10 @@ const CL0001_Home = () => {
           </button>
         </section>
       )}
-
       {/* ================= TEXTO INFORMATIVO ================= */}
       <div className="text-center text-gray-400 text-sm py-6">
         Pronto verás sugerencias según tus reservas
       </div>
-
       {/* ================= SIN RESERVAS ================= */}
       {!loadingActiva && !loadingUltima && !reservaActiva && !ultimaReserva && (
         <div className="text-center text-gray-400 text-sm py-6">
