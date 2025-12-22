@@ -3,10 +3,10 @@ import {
   collection,
   query,
   where,
-  getDocs,
   doc,
   updateDoc,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../../services/firebase/firebaseConfig";
 import type { Reserva } from "../../../types/firebase";
@@ -32,8 +32,6 @@ type HorarioDia = {
   tramos: TramoHorario[];
 };
 
-type HorariosSemana = Record<DiaSemana, HorarioDia | undefined>;
-
 type DiaSemana =
   | "lunes"
   | "martes"
@@ -43,18 +41,22 @@ type DiaSemana =
   | "sabado"
   | "domingo";
 
+type HorariosSemana = Record<DiaSemana, HorarioDia | undefined>;
+
 type NegocioConHorarios = {
   horarios: HorariosSemana;
 };
 
-const normalizarDiaSemana = (dia: string): DiaSemana => {
-  return dia
-    .normalize("NFD") // separa letras y tildes
-    .replace(/[\u0300-\u036f]/g, "") // elimina tildes
+/* =========================
+   HELPERS
+========================== */
+const normalizarDiaSemana = (dia: string): DiaSemana =>
+  dia
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase() as DiaSemana;
-};
 
-const PIXELES_POR_MINUTO = 2; // 30 min = 60px
+const PIXELES_POR_MINUTO = 2;
 
 /* =========================
    COMPONENTE
@@ -62,7 +64,7 @@ const PIXELES_POR_MINUTO = 2; // 30 min = 60px
 const EM0002_Reservas = () => {
   const { userData, loading, loadingUserData } = useAuth();
 
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(new Date());
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
   const [reservas, setReservas] = useState<ReservaConEstado[]>([]);
   const [negocio, setNegocio] = useState<NegocioConHorarios | null>(null);
 
@@ -70,44 +72,38 @@ const EM0002_Reservas = () => {
     useState<ReservaConEstado | null>(null);
 
   const [modoModal, setModoModal] = useState<ModoModal>("ver");
-  const [nuevaHora, setNuevaHora] = useState<string>("");
-  const [errorSolapamiento, setErrorSolapamiento] = useState<string>("");
+  const [nuevaHora, setNuevaHora] = useState("");
+  const [errorSolapamiento, setErrorSolapamiento] = useState("");
 
   /* =========================
-     CARGAR NEGOCIO
+     NEGOCIO (REALTIME)
   ========================== */
   useEffect(() => {
     if (!userData?.negocioId) return;
 
-    const cargarNegocio = async () => {
-      const q = query(
-        collection(db, "negocios"),
-        where("__name__", "==", userData.negocioId)
-      );
+    const ref = doc(db, "negocios", userData.negocioId);
 
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        setNegocio(snap.docs[0].data() as NegocioConHorarios);
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setNegocio(snap.data() as NegocioConHorarios);
       }
-    };
+    });
 
-    cargarNegocio();
-  }, [userData]);
+    return () => unsubscribe();
+  }, [userData?.negocioId]);
 
   /* =========================
-     CARGAR RESERVAS
+     RESERVAS (REALTIME)
   ========================== */
   useEffect(() => {
-    if (loading || loadingUserData) return;
     if (!userData?.negocioId) return;
 
-    const cargarReservas = async () => {
-      const q = query(
-        collection(db, "reservas"),
-        where("negocioId", "==", userData.negocioId)
-      );
+    const q = query(
+      collection(db, "reservas"),
+      where("negocioId", "==", userData.negocioId)
+    );
 
-      const snapshot = await getDocs(q);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const ahora = new Date();
 
       const reservasDia: ReservaConEstado[] = snapshot.docs
@@ -119,34 +115,28 @@ const EM0002_Reservas = () => {
 
           const fin = new Date(reserva.fin.seconds * 1000);
 
-          let estadoEfectivo: ReservaConEstado["estadoEfectivo"] =
-            reserva.estado;
-
+          let estadoEfectivo = reserva.estado;
           if (reserva.estado === "confirmada" && fin < ahora) {
             estadoEfectivo = "finalizada";
           }
 
-          return {
-            ...reserva,
-            estadoEfectivo,
-          };
+          return { ...reserva, estadoEfectivo };
         })
         .filter((reserva) => {
-          const fechaReserva = new Date(reserva.inicio.seconds * 1000);
-
+          const fecha = new Date(reserva.inicio.seconds * 1000);
           return (
-            fechaReserva.getFullYear() === fechaSeleccionada.getFullYear() &&
-            fechaReserva.getMonth() === fechaSeleccionada.getMonth() &&
-            fechaReserva.getDate() === fechaSeleccionada.getDate()
+            fecha.getFullYear() === fechaSeleccionada.getFullYear() &&
+            fecha.getMonth() === fechaSeleccionada.getMonth() &&
+            fecha.getDate() === fechaSeleccionada.getDate()
           );
         })
         .sort((a, b) => a.inicio.seconds - b.inicio.seconds);
 
       setReservas(reservasDia);
-    };
+    });
 
-    cargarReservas();
-  }, [loading, loadingUserData, userData, fechaSeleccionada]);
+    return () => unsubscribe();
+  }, [userData?.negocioId, fechaSeleccionada]);
 
   /* =========================
      HORARIO DEL DÍA
@@ -193,16 +183,12 @@ const EM0002_Reservas = () => {
     const inicioMinutos = hIni * 60 + mIni;
     let finMinutos = hFin * 60 + mFin;
 
-    // ⬇️ extender hasta la última reserva si hace falta
     reservas.forEach((r) => {
       const fin = new Date(r.fin.seconds * 1000);
       const minutosFin = fin.getHours() * 60 + fin.getMinutes();
-      if (minutosFin > finMinutos) {
-        finMinutos = minutosFin;
-      }
+      if (minutosFin > finMinutos) finMinutos = minutosFin;
     });
 
-    // ⬇️ generar horas cada 30 minutos
     const horas: string[] = [];
     for (let m = inicioMinutos; m <= finMinutos; m += 30) {
       const h = Math.floor(m / 60)
@@ -212,7 +198,6 @@ const EM0002_Reservas = () => {
       horas.push(`${h}:${min}`);
     }
 
-    // ⬇️ línea de hora actual (EN PÍXELES)
     const hoy = new Date();
     const esHoy = fechaSeleccionada.toDateString() === hoy.toDateString();
 
@@ -249,18 +234,12 @@ const EM0002_Reservas = () => {
     setFechaSeleccionada(nuevaFecha);
   };
 
-  const calcularTop = (fecha: Date): number => {
-    const minutosDesdeInicio =
-      fecha.getHours() * 60 + fecha.getMinutes() - horaInicioMinutos;
+  const calcularTop = (fecha: Date): number =>
+    (fecha.getHours() * 60 + fecha.getMinutes() - horaInicioMinutos) *
+    PIXELES_POR_MINUTO;
 
-    return minutosDesdeInicio * PIXELES_POR_MINUTO;
-  };
-
-  const calcularAltura = (inicio: Date, fin: Date): number => {
-    const duracionMinutos = (fin.getTime() - inicio.getTime()) / 1000 / 60;
-
-    return duracionMinutos * PIXELES_POR_MINUTO;
-  };
+  const calcularAltura = (inicio: Date, fin: Date): number =>
+    ((fin.getTime() - inicio.getTime()) / 1000 / 60) * PIXELES_POR_MINUTO;
 
   /* =========================
      ACCIONES
@@ -292,9 +271,10 @@ const EM0002_Reservas = () => {
 
     const haySolape = reservas.some((r) => {
       if (r.id === reservaSeleccionada.id) return false;
-      const ini = r.inicio.seconds * 1000;
-      const fin = r.fin.seconds * 1000;
-      return nuevoInicio.getTime() < fin && nuevoFin.getTime() > ini;
+      return (
+        nuevoInicio.getTime() < r.fin.seconds * 1000 &&
+        nuevoFin.getTime() > r.inicio.seconds * 1000
+      );
     });
 
     if (haySolape) {
@@ -308,18 +288,6 @@ const EM0002_Reservas = () => {
       actualizadaEn: Timestamp.now(),
     });
 
-    setReservas((prev) =>
-      prev.map((r) =>
-        r.id === reservaSeleccionada.id
-          ? {
-              ...r,
-              inicio: Timestamp.fromDate(nuevoInicio),
-              fin: Timestamp.fromDate(nuevoFin),
-            }
-          : r
-      )
-    );
-
     cerrarModal();
   };
 
@@ -327,9 +295,7 @@ const EM0002_Reservas = () => {
     return <p>Cargando sesión...</p>;
   }
 
-  /* =========================
-     UI
-  ========================== */
+  // region Renderizado
   return (
     <div className="flex flex-col gap-4">
       {/* ================= HEADER ================= */}
@@ -403,7 +369,7 @@ const EM0002_Reservas = () => {
                   className={`
               h-[60px]
               ${index % 2 === 0 ? "bg-gray-50/60" : "bg-white"}
-            `}
+              `}
                 />
               ))}
 
@@ -429,12 +395,12 @@ const EM0002_Reservas = () => {
                       setNuevaHora(inicio.toTimeString().slice(0, 5));
                     }}
                     className="
-    absolute left-0 right-0 mx-1
-    rounded-r-xl
-    p-3 text-sm cursor-pointer
-    bg-[#E8EDFF] hover:bg-[#DDE4FF]
-    transition
-  "
+                      absolute left-0 right-0 mx-6
+                      
+                      p-3 text-sm cursor-pointer
+                      bg-[#E8EDFF] hover:bg-[#DDE4FF]
+                      transition
+                    "
                     style={{
                       top: calcularTop(inicio) + 16,
                       height: calcularAltura(inicio, fin),
@@ -459,84 +425,118 @@ const EM0002_Reservas = () => {
 
       {/* ================= MODAL ================= */}
       {reservaSeleccionada && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 flex flex-col gap-4 shadow-lg">
-            <h2 className="text-lg font-semibold text-[#1F2A44]">
-              Detalle de la reserva
-            </h2>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+            {/* ===== HEADER ===== */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#F4F7FF]">
+              <h2 className="text-sm font-semibold text-[#1F2A44]">
+                Detalle de la reserva
+              </h2>
 
-            <div className="flex flex-col gap-1 text-sm">
-              <p>
-                <strong>Cliente:</strong> {reservaSeleccionada.nombreCliente}
-              </p>
-              <p>
-                <strong>Servicio:</strong> {reservaSeleccionada.nombreServicio}
-              </p>
-              <p>
-                <strong>Horario:</strong>{" "}
-                {new Date(
-                  reservaSeleccionada.inicio.seconds * 1000
-                ).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}{" "}
-                -{" "}
-                {new Date(
-                  reservaSeleccionada.fin.seconds * 1000
-                ).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-
-            {/* ===== CAMBIAR HORA ===== */}
-            {modoModal === "cambiarHora" && (
-              <div className="flex flex-col gap-2">
-                <input
-                  type="time"
-                  value={nuevaHora}
-                  onChange={(e) => setNuevaHora(e.target.value)}
-                  className="border rounded-lg px-2 py-1"
-                />
-                {errorSolapamiento && (
-                  <p className="text-red-600 text-sm">{errorSolapamiento}</p>
-                )}
-              </div>
-            )}
-
-            {/* ===== CONFIRMAR CANCELACIÓN ===== */}
-            {modoModal === "confirmarCancelacion" && (
-              <p className="text-red-600 text-sm">
-                ¿Seguro que quieres cancelar esta reserva?
-              </p>
-            )}
-
-            {/* ===== INFO NO EDITABLE ===== */}
-            {modoModal === "ver" && !esEditable(reservaSeleccionada) && (
-              <p className="text-sm text-gray-500">
-                Esta reserva ya no se puede modificar porque ha finalizado.
-              </p>
-            )}
-
-            {/* ===== ACCIONES ===== */}
-            <div className="flex justify-end gap-2 pt-4 border-t">
               <button
                 onClick={cerrarModal}
-                className="px-3 py-1 border rounded-lg"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#E6EBFF] transition"
+                aria-label="Cerrar"
               >
-                Cerrar
+                <Icons.close size={16} className="text-[#1F2A44]/70" />
               </button>
+            </div>
 
+            {/* ===== CONTENIDO ===== */}
+            <div className="px-6 py-5 flex flex-col gap-5 text-sm">
+              {/* Cliente */}
+              <div className="flex items-start gap-3">
+                <Icons.user size={16} className="text-[#1F2A44]" />
+                <div>
+                  <p className="text-xs text-gray-500">Cliente</p>
+                  <p className="font-medium text-[#1F2A44]">
+                    {reservaSeleccionada.nombreCliente}
+                  </p>
+                </div>
+              </div>
+
+              {/* Servicio */}
+              <div className="flex items-start gap-3">
+                <Icons.scissors size={16} className="text-[#1F2A44]" />
+                <div>
+                  <p className="text-xs text-gray-500">Servicio</p>
+                  <p className="font-medium text-[#1F2A44]">
+                    {reservaSeleccionada.nombreServicio}
+                  </p>
+                </div>
+              </div>
+
+              {/* Horario */}
+              <div className="flex items-start gap-3">
+                <Icons.clock size={16} className="text-[#1F2A44]" />
+                <div>
+                  <p className="text-xs text-gray-500">Horario</p>
+                  <p className="font-medium text-[#1F2A44]">
+                    {new Date(
+                      reservaSeleccionada.inicio.seconds * 1000
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    –{" "}
+                    {new Date(
+                      reservaSeleccionada.fin.seconds * 1000
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* ===== CAMBIAR HORA ===== */}
+              {modoModal === "cambiarHora" && (
+                <div className="flex flex-col gap-2 pt-2">
+                  <label className="text-xs text-gray-500">
+                    Nueva hora de inicio
+                  </label>
+                  <input
+                    type="time"
+                    value={nuevaHora}
+                    onChange={(e) => setNuevaHora(e.target.value)}
+                    className="
+                border border-gray-200 rounded-lg px-3 py-2 text-sm
+                focus:outline-none focus:ring-2 focus:ring-[#1F2A44]/30
+              "
+                  />
+                  {errorSolapamiento && (
+                    <p className="text-red-600 text-xs">{errorSolapamiento}</p>
+                  )}
+                </div>
+              )}
+
+              {/* ===== CONFIRMAR CANCELACIÓN ===== */}
+              {modoModal === "confirmarCancelacion" && (
+                <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <Icons.trash size={16} />
+                  <p>¿Seguro que quieres cancelar esta reserva?</p>
+                </div>
+              )}
+
+              {/* ===== INFO NO EDITABLE ===== */}
+              {modoModal === "ver" && !esEditable(reservaSeleccionada) && (
+                <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                  Esta reserva ya no se puede modificar porque ha finalizado.
+                </div>
+              )}
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div className="flex justify-end gap-2 px-6 py-4 bg-[#F4F7FF]">
               {/* ---- MODO VER ---- */}
               {modoModal === "ver" && (
                 <>
                   <button
                     onClick={() => setModoModal("confirmarCancelacion")}
                     disabled={!esEditable(reservaSeleccionada)}
-                    className={`px-3 py-1 border rounded-lg ${
+                    className={`px-3 py-1.5 text-sm rounded-md transition ${
                       esEditable(reservaSeleccionada)
-                        ? "text-red-600"
+                        ? "text-red-600 hover:bg-red-50"
                         : "text-gray-400 cursor-not-allowed"
                     }`}
                   >
@@ -546,10 +546,10 @@ const EM0002_Reservas = () => {
                   <button
                     onClick={() => setModoModal("cambiarHora")}
                     disabled={!esEditable(reservaSeleccionada)}
-                    className={`px-3 py-1 border rounded-lg ${
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
                       esEditable(reservaSeleccionada)
-                        ? "text-[#1F2A44]"
-                        : "text-gray-400 cursor-not-allowed"
+                        ? "bg-[#1F2A44] text-white hover:bg-[#162036]"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     Cambiar hora
@@ -562,13 +562,13 @@ const EM0002_Reservas = () => {
                 <>
                   <button
                     onClick={() => setModoModal("ver")}
-                    className="px-3 py-1 border rounded-lg"
+                    className="px-3 py-1.5 rounded-md text-sm hover:bg-gray-200 transition"
                   >
                     No
                   </button>
                   <button
                     onClick={cancelarReserva}
-                    className="px-3 py-1 border rounded-lg text-red-600"
+                    className="px-4 py-1.5 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
                   >
                     Sí, cancelar
                   </button>
@@ -579,9 +579,9 @@ const EM0002_Reservas = () => {
               {modoModal === "cambiarHora" && (
                 <button
                   onClick={guardarNuevaHora}
-                  className="px-3 py-1 border rounded-lg text-[#1F2A44]"
+                  className="px-4 py-1.5 rounded-md text-sm font-medium bg-[#1F2A44] text-white hover:bg-[#162036] transition"
                 >
-                  Guardar
+                  Guardar cambios
                 </button>
               )}
             </div>
@@ -590,6 +590,7 @@ const EM0002_Reservas = () => {
       )}
     </div>
   );
+  // endregion
 };
 
 export default EM0002_Reservas;
